@@ -1,0 +1,1 @@
+export type BadgeTone = "ok" | "warn" | "error" | "neutral";

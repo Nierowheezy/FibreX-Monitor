@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FibreX Monitor panel</title>
+    <link rel="stylesheet" href="theme.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      /* Reset the UA <p> margins before styling, same reason as the dashboard. */
+      h1,
+      p {
+        margin: 0;
+      }
+
+      body {
+        margin: 0;
+        width: 340px;
+        height: 460px;
+        overflow: hidden;
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: var(--font-ui);
+        font-size: var(--text-label);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .panel {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: var(--space-5) var(--space-5) var(--space-4);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-3);
+        padding-bottom: var(--space-4);
+        border-bottom: var(--border-hairline);
+      }
+
+      .wordmark {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: 1.375rem;
+        font-weight: var(--weight-regular);
+        letter-spacing: var(--tracking-title);
+        line-height: 1;
+      }
+
+      .stamp {
+        font-family: var(--font-mono);
+        font-size: var(--text-micro);
+        letter-spacing: var(--tracking-label);
+        color: var(--ink-faint);
+      }
+
+      /* Headline reading inside the panel: the one big number. */
+      .headline {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: var(--space-3);
+        padding: var(--space-5) 0;
+        border-bottom: var(--border-hairline);
+      }
+
+      .figure {
+        font-size: 2.75rem;
+        font-weight: var(--weight-semibold);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+      }
+
+      .figure-empty {
+        font-size: 1.5rem;
+        font-weight: var(--weight-regular);
+        letter-spacing: var(--tracking-title);
+        color: var(--ink-faint);
+      }
+
+      .unit {
+        font-size: var(--text-micro);
+        font-weight: var(--weight-medium);
+        color: var(--ink-faint);
+        margin-left: var(--space-2);
+        letter-spacing: var(--tracking-label);
+      }
+
+      /* Rows: hairline separated, label left, value right. */
+      .rows {
+        flex: 1;
+        overflow: auto;
+      }
+
+      .row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: var(--space-4);
+        padding: var(--space-3) 0;
+        border-bottom: var(--border-hairline-soft);
+      }
+
+      .row:last-child {
+        border-bottom: 0;
+      }
+
+      .row-label {
+        font-size: var(--text-micro);
+        font-weight: var(--weight-medium);
+        letter-spacing: var(--tracking-micro);
+        text-transform: uppercase;
+        color: var(--ink-faint);
+      }
+
+      .row-value {
+        font-size: var(--text-body);
+        font-weight: var(--weight-semibold);
+        text-align: right;
+      }
+
+      .row-value--empty {
+        font-weight: var(--weight-regular);
+        color: var(--ink-faint);
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        border-radius: var(--radius-pill);
+        padding: 2px var(--space-3);
+        font-size: var(--text-micro);
+        font-weight: var(--weight-semibold);
+        letter-spacing: var(--tracking-label);
+      }
+
+      .pill--ok {
+        background: var(--ok-tint);
+        color: var(--ok);
+      }
+      .pill--warn {
+        background: var(--warn-tint);
+        color: var(--warn);
+      }
+      .pill--alert {
+        background: var(--alert-tint);
+        color: var(--alert);
+      }
+      .pill--neutral {
+        background: var(--neutral-tint);
+        color: var(--neutral);
+      }
+
+      .actions {
+        display: flex;
+        gap: var(--space-2);
+        padding-top: var(--space-4);
+      }
+
+      .button {
+        flex: 1;
+        font: inherit;
+        font-size: var(--text-micro);
+        font-weight: var(--weight-semibold);
+        letter-spacing: var(--tracking-label);
+        border-radius: var(--radius-control);
+        padding: var(--space-3);
+        cursor: pointer;
+        transition: background var(--motion) var(--ease);
+      }
+
+      .button--primary {
+        background: var(--accent);
+        color: var(--accent-ink);
+        border: var(--border-ink);
+      }
+
+      .button--quiet {
+        background: transparent;
+        color: var(--ink-muted);
+        border: var(--border-hairline);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="panel">
+      <header class="panel-head">
+        <h1 class="wordmark">FibreX Monitor</h1>
+        <span class="stamp" id="stamp">now</span>
+      </header>
+
+      <div class="headline">
+        <p class="figure" id="headline">
+          14<span class="unit">ms</span>
+        </p>
+        <span class="pill pill--ok" id="headline-pill">Healthy</span>
+      </div>
+
+      <div class="rows" id="rows"></div>
+
+      <div class="actions">
+        <button class="button button--primary" type="button">Open dashboard</button>
+        <button class="button button--quiet" type="button">Pause</button>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var WITH_READINGS = [
+          { label: "Connection", html: '<span class="pill pill--ok">Connected</span>' },
+          { label: "Packet loss", html: "0.0 %" },
+          { label: "Download", html: "92.4 Mbps" },
+          { label: "Upload", html: "18.7 Mbps" },
+          { label: "Last probe", html: "2s ago" },
+        ];
+
+        var FIRST_RUN = [
+          { label: "Connection", html: '<span class="pill pill--neutral">Unknown</span>' },
+          { label: "Packet loss", html: '<span class="row-value--empty">No reading</span>' },
+          { label: "Download", html: '<span class="row-value--empty">No reading</span>' },
+          { label: "Upload", html: '<span class="row-value--empty">No reading</span>' },
+          { label: "Last probe", html: "Never" },
+        ];
+
+        var headline = document.getElementById("headline");
+        var pill = document.getElementById("headline-pill");
+        var rows = document.getElementById("rows");
+
+        function render(withData) {
+          var items = withData ? WITH_READINGS : FIRST_RUN;
+          headline.innerHTML = withData
+            ? '14<span class="unit">ms</span>'
+            : '<span class="figure-empty">No reading</span>';
+          pill.className = "pill " + (withData ? "pill--ok" : "pill--neutral");
+          pill.textContent = withData ? "Healthy" : "No reading";
+          rows.innerHTML = items
+            .map(function (item) {
+              return (
+                '<div class="row"><span class="row-label">' + item.label +
+                '</span><span class="row-value">' + item.html + "</span></div>"
+              );
+            })
+            .join("");
+        }
+
+        render(true);
+
+        // Exposed so the dashboard page can drive this panel when it is framed.
+        window.setPanelView = render;
+        window.addEventListener("message", function (event) {
+          if (event.data && event.data.view) render(event.data.view === "data");
+        });
+
+        if (window.parent !== window) {
+          window.parent.postMessage({ ready: true }, "*");
+          window.parent.addEventListener("message", function (event) {
+            if (event.data && event.data.view) render(event.data.view === "data");
+          });
+        }
+      })();
+    </script>
+  </body>
+</html>

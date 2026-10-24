@@ -1,0 +1,23 @@
+<!--
+  The app icon source. Three chevrons fanning out from a point, drawn in ember
+  (#ff5a1c) on the dark bento canvas (#09090b), which is the same mark and the
+  same pair of tokens the topbar wordmark uses.
+
+  Geometry is lifted verbatim from src/components/ui/icons.tsx Wordmark and
+  prototypes-new/dashboard.html, scaled onto a 1024 canvas by the wrapper group.
+
+  This file is kept beside the generated PNGs so the icon can be regenerated
+  rather than hand-edited. Run the command in src-tauri/icons/README.md.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Rounded background tile. macOS masks app icons itself, so the tile is a
+       plain rounded square scaled to the standard 824/1024 safe area. -->
+  <rect x="0" y="0" width="1024" height="1024" rx="228" ry="228" fill="#09090b" />
+
+  <!-- The mark, centred and scaled from its 24x24 box to 552x552. -->
+  <g transform="translate(236 236) scale(23)">
+    <path d="M12 2.6l3.1 5.3a4.6 4.6 0 0 0-6.2 0L12 2.6z" fill="#ff5a1c" />
+    <path d="M6.6 9.4l3.2 5.5a4.6 4.6 0 0 0-6.3 0l3.1-5.5z" fill="#ff5a1c" opacity="0.55" />
+    <path d="M17.4 9.4l-3.2 5.5a4.6 4.6 0 0 1 0-5.5z" fill="#ff5a1c" opacity="0.3" />
+  </g>
+</svg>

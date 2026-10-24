@@ -1,0 +1,1160 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FibreX Monitor dashboard</title>
+    <link rel="stylesheet" href="theme.css" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      /* The UA stylesheet gives every <p> a 1em vertical margin. On a 72px
+         headline that is 72px of phantom space, which pushed the hero footer
+         clean out of its card. Reset first, then set the margins that matter. */
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      body {
+        margin: 0;
+        background: var(--canvas);
+        color: var(--ink);
+        font-family: var(--font-ui);
+        font-size: var(--text-body);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      .shell {
+        max-width: var(--shell-max);
+        margin: 0 auto;
+        padding: var(--space-6) var(--space-5) var(--space-7);
+      }
+
+      /* Header: wordmark plus the two view controls. */
+      .app-bar {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: var(--space-5);
+        flex-wrap: wrap;
+        margin-bottom: var(--space-6);
+      }
+
+      .wordmark {
+        margin: 0;
+        font-family: var(--font-display);
+        font-size: var(--text-title);
+        font-weight: var(--weight-regular);
+        letter-spacing: var(--tracking-title);
+        line-height: 1.1;
+      }
+
+      .subtitle {
+        margin: var(--space-1) 0 0;
+        font-size: var(--text-label);
+        letter-spacing: var(--tracking-label);
+        color: var(--ink-faint);
+      }
+
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+      }
+
+      /* Segmented control: hairline container, accent fill when selected. */
+      .segment {
+        display: inline-flex;
+        gap: var(--space-1);
+        padding: var(--space-1);
+        border: var(--border-hairline);
+        border-radius: var(--radius-pill);
+        background: var(--surface);
+      }
+
+      .segment button {
+        font: inherit;
+        font-size: var(--text-micro);
+        font-weight: var(--weight-medium);
+        letter-spacing: var(--tracking-label);
+        color: var(--ink-muted);
+        background: transparent;
+        border: 0;
+        border-radius: var(--radius-pill);
+        padding: var(--space-2) var(--space-4);
+        cursor: pointer;
+        transition: background var(--motion) var(--ease);
+      }
+
+      .segment button[aria-pressed="true"] {
+        background: var(--ink);
+        color: var(--ink-invert);
+      }
+
+      /* Status strip: a hairline card, three facts, no colour noise. */
+      .status {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: var(--space-5);
+        padding: var(--space-5);
+        border: var(--border-hairline);
+        border-radius: var(--radius-card);
+        background: var(--surface);
+        margin-bottom: var(--space-5);
+      }
+
+      .label {
+        font-size: var(--text-micro);
+        font-weight: var(--weight-medium);
+        letter-spacing: var(--tracking-micro);
+        text-transform: uppercase;
+        color: var(--ink-faint);
+      }
+
+      .value {
+        margin-top: var(--space-2);
+        font-size: var(--text-body);
+        font-weight: var(--weight-semibold);
+      }
+
+      /* Hero: the one focal element. Ink border, lavender fill, big serif. */
+      .hero {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        /* An explicit row height: left to itself the row stretched to 405px for
+           236px of content, which read as an unfinished void rather than as
+           space. Sized to the content instead. */
+        grid-auto-rows: 268px;
+        gap: var(--space-4);
+        margin-bottom: var(--space-5);
+      }
+
+      .hero-primary {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: var(--space-6);
+        padding: var(--space-6);
+        border: var(--border-ink);
+        border-radius: var(--radius-hero);
+        background: var(--accent);
+        /* The lavender fill is identical in both modes, so its text must be too.
+           Left on --ink, the headline turned cream on lavender in dark mode. */
+        color: var(--on-accent);
+      }
+
+      .hero-primary .label,
+      .hero-primary .tile-foot,
+      .hero-primary .hero-unit {
+        color: var(--on-accent-muted);
+      }
+
+      .hero-figure {
+        font-size: 4.5rem;
+        font-weight: var(--weight-semibold);
+        line-height: 1;
+        letter-spacing: -0.04em;
+      }
+
+      /* An unmeasured hero reads as words, not as a giant dash: at 72px a dash
+         looks like a rendering glitch rather than an honest empty state. */
+      .hero-figure.empty {
+        font-size: var(--text-title);
+        font-weight: var(--weight-regular);
+        letter-spacing: var(--tracking-title);
+        color: var(--ink-muted);
+      }
+
+      .hero-unit {
+        font-size: var(--text-body);
+        font-weight: var(--weight-medium);
+        color: var(--ink-muted);
+        margin-left: var(--space-2);
+      }
+
+      /* The dark card on the cream canvas: their one strong contrast move. */
+      .hero-dark {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        gap: var(--space-5);
+        padding: var(--space-6);
+        border-radius: var(--radius-hero);
+        background: var(--surface-dark);
+        color: var(--ink-invert);
+      }
+
+      .hero-word {
+        font-family: var(--font-display);
+        font-size: var(--text-display);
+        font-weight: var(--weight-regular);
+        letter-spacing: var(--tracking-display);
+        line-height: 1.05;
+      }
+
+      .hero-dark .label,
+      .hero-dark .hero-note {
+        color: var(--ink-faint);
+      }
+
+      /* Metric tiles: hairline, off-white, quiet. */
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: var(--space-4);
+      }
+
+      .tile {
+        padding: var(--space-5);
+        border: var(--border-hairline);
+        border-radius: var(--radius-card);
+        background: var(--surface);
+      }
+
+      .tile-figure {
+        margin-top: var(--space-3);
+        font-size: var(--text-metric);
+        font-weight: var(--weight-semibold);
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+      }
+
+      .tile-empty {
+        margin-top: var(--space-3);
+        font-size: var(--text-title);
+        font-weight: var(--weight-regular);
+        letter-spacing: var(--tracking-title);
+        color: var(--ink-faint);
+      }
+
+      .tile-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-3);
+        margin-top: var(--space-4);
+        font-size: var(--text-micro);
+        letter-spacing: var(--tracking-label);
+        color: var(--ink-faint);
+      }
+
+      /* Pills: tinted background, no border, no dot. */
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        border-radius: var(--radius-pill);
+        padding: var(--space-1) var(--space-3);
+        font-size: var(--text-micro);
+        font-weight: var(--weight-semibold);
+        letter-spacing: var(--tracking-label);
+      }
+
+      .pill--ok {
+        background: var(--ok-tint);
+        color: var(--ok);
+      }
+      .pill--warn {
+        background: var(--warn-tint);
+        color: var(--warn);
+      }
+      .pill--alert {
+        background: var(--alert-tint);
+        color: var(--alert);
+      }
+      .pill--neutral {
+        background: var(--neutral-tint);
+        color: var(--neutral);
+      }
+
+      /* Appearance: one icon that opens the three modes, the way Vercel does it,
+         rather than a row of tabs spending permanent header width. */
+      .appearance {
+        position: relative;
+      }
+
+      .appearance-trigger {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 34px;
+        height: 34px;
+        color: var(--ink-muted);
+        background: var(--surface);
+        border: var(--border-hairline);
+        border-radius: var(--radius-pill);
+        cursor: pointer;
+      }
+
+      .appearance-trigger:hover {
+        color: var(--ink);
+      }
+
+      .appearance-trigger svg {
+        width: 16px;
+        height: 16px;
+        display: block;
+      }
+
+      .appearance-menu {
+        position: absolute;
+        top: calc(100% + var(--space-2));
+        right: 0;
+        min-width: 148px;
+        padding: var(--space-1);
+        background: var(--surface);
+        border: var(--border-hairline);
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-pop);
+        z-index: 10;
+      }
+
+      .appearance-menu[hidden] {
+        display: none;
+      }
+
+      .appearance-option {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        width: 100%;
+        font: inherit;
+        font-size: var(--text-label);
+        font-weight: var(--weight-medium);
+        letter-spacing: var(--tracking-label);
+        color: var(--ink-muted);
+        background: transparent;
+        border: 0;
+        border-radius: var(--radius-control);
+        padding: var(--space-2) var(--space-3);
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .appearance-option:hover {
+        background: var(--accent-soft);
+        color: var(--ink);
+      }
+
+      .appearance-option[aria-checked="true"] {
+        color: var(--ink);
+        font-weight: var(--weight-semibold);
+      }
+
+      .appearance-option svg {
+        width: 15px;
+        height: 15px;
+        flex: none;
+      }
+
+      /* Chart card. */
+      .chart-card {
+        margin-top: var(--space-5);
+        padding: var(--space-5) var(--space-5) var(--space-4);
+        border: var(--border-hairline);
+        border-radius: var(--radius-card);
+        background: var(--surface);
+      }
+
+      .chart-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: var(--space-4);
+        flex-wrap: wrap;
+        margin-bottom: var(--space-4);
+      }
+
+      .chart-figure {
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-3);
+        margin-top: var(--space-2);
+      }
+
+      .chart-value {
+        font-size: var(--text-metric);
+        font-weight: var(--weight-semibold);
+        letter-spacing: -0.02em;
+        line-height: 1;
+      }
+
+      .chart-delta {
+        display: inline-flex;
+        align-items: center;
+        gap: var(--space-1);
+        font-family: var(--font-mono);
+        font-size: var(--text-micro);
+        font-weight: var(--weight-medium);
+        letter-spacing: var(--tracking-label);
+      }
+
+      .chart-delta--bad {
+        color: var(--chart-bad);
+      }
+
+      .chart-delta--good {
+        color: var(--chart-good);
+      }
+
+      .range {
+        display: inline-flex;
+        gap: var(--space-1);
+        padding: 2px;
+        background: var(--surface-sunken);
+        border-radius: var(--radius-pill);
+      }
+
+      .range button {
+        font: inherit;
+        font-family: var(--font-mono);
+        font-size: var(--text-micro);
+        font-weight: var(--weight-medium);
+        letter-spacing: var(--tracking-label);
+        color: var(--ink-muted);
+        background: transparent;
+        border: 0;
+        border-radius: var(--radius-pill);
+        padding: var(--space-1) var(--space-3);
+        cursor: pointer;
+      }
+
+      .range button[aria-pressed="true"] {
+        background: var(--surface);
+        color: var(--ink);
+      }
+
+      .chart-frame svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        overflow: visible;
+      }
+
+      .chart-grid-line {
+        stroke: var(--chart-grid);
+        stroke-width: 1;
+      }
+
+      .chart-axis-label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        fill: var(--ink-faint);
+        letter-spacing: 0.04em;
+      }
+
+      /* The line draws itself in, then the wash settles under it. */
+      .chart-line {
+        fill: none;
+        stroke: var(--chart-line);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .chart-area {
+        fill: url(#chart-wash);
+        animation: chart-wash 900ms var(--ease) 380ms both;
+      }
+
+      @keyframes chart-wash {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .chart-gap {
+        stroke: var(--ink-faint);
+        stroke-width: 2;
+        stroke-dasharray: 3 5;
+        fill: none;
+      }
+
+      .chart-latest {
+        fill: var(--chart-dot);
+        animation: chart-pulse 2.4s ease-in-out infinite;
+        transform-box: fill-box;
+        transform-origin: center;
+      }
+
+      @keyframes chart-pulse {
+        0%,
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1.9);
+          opacity: 0.35;
+        }
+      }
+
+      .chart-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: var(--space-3);
+        height: 200px;
+        border: 1px dashed var(--hairline);
+        border-radius: var(--radius-control);
+        color: var(--ink-faint);
+        font-size: var(--text-label);
+        letter-spacing: var(--tracking-label);
+      }
+
+      .chart-note {
+        margin-top: var(--space-3);
+        font-family: var(--font-mono);
+        font-size: var(--text-micro);
+        letter-spacing: var(--tracking-label);
+        color: var(--ink-faint);
+      }
+
+      .section-label {
+        margin: var(--space-7) 0 var(--space-4);
+      }
+
+      .gallery {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: var(--space-4);
+        padding: var(--space-5);
+        border: var(--border-hairline);
+        border-radius: var(--radius-card);
+        background: var(--surface);
+      }
+
+      .notice {
+        margin-top: var(--space-4);
+        display: flex;
+        align-items: baseline;
+        gap: var(--space-3);
+        padding: var(--space-4) var(--space-5);
+        border-radius: var(--radius-card);
+        background: var(--alert-tint);
+        color: var(--alert);
+        font-size: var(--text-label);
+        letter-spacing: var(--tracking-label);
+      }
+
+      .spacer {
+        height: var(--space-6);
+      }
+
+      /* Panel preview sits on the page so the two surfaces can be compared. */
+      .panel-frame {
+        width: 340px;
+        border-radius: var(--radius-card-lg);
+        overflow: hidden;
+        box-shadow: var(--shadow-pop);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="shell">
+      <header class="app-bar">
+        <div>
+          <h1 class="wordmark">FibreX Monitor</h1>
+          <p class="subtitle">MTN FibreX connection health</p>
+        </div>
+
+        <div class="controls">
+          <div class="segment" role="group" aria-label="View">
+            <button type="button" data-view="data" aria-pressed="true">
+              With readings
+            </button>
+            <button type="button" data-view="empty" aria-pressed="false">
+              First run
+            </button>
+          </div>
+          <div class="appearance">
+            <button
+              class="appearance-trigger"
+              type="button"
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-label="Appearance"
+              title="Appearance"
+              id="appearance-trigger"
+            ></button>
+            <div class="appearance-menu" role="menu" hidden id="appearance-menu">
+              <button
+                class="appearance-option"
+                type="button"
+                role="menuitemradio"
+                data-mode="system"
+                aria-checked="true"
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5" />
+                  <path d="M8 2.5a5.5 5.5 0 0 0 0 11z" fill="currentColor" />
+                </svg>
+                System
+              </button>
+              <button
+                class="appearance-option"
+                type="button"
+                role="menuitemradio"
+                data-mode="light"
+                aria-checked="false"
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <circle cx="8" cy="8" r="3.25" fill="none" stroke="currentColor" stroke-width="1.5" />
+                  <path
+                    d="M8 1.5v1.75M8 12.75v1.75M1.5 8h1.75M12.75 8h1.75M3.4 3.4l1.24 1.24M11.36 11.36l1.24 1.24M12.6 3.4l-1.24 1.24M4.64 11.36L3.4 12.6"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linecap="round"
+                  />
+                </svg>
+                Light
+              </button>
+              <button
+                class="appearance-option"
+                type="button"
+                role="menuitemradio"
+                data-mode="dark"
+                aria-checked="false"
+              >
+                <svg viewBox="0 0 16 16" aria-hidden="true">
+                  <path
+                    d="M13.5 9.6A5.9 5.9 0 0 1 6.4 2.5a5.9 5.9 0 1 0 7.1 7.1z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    stroke-linejoin="round"
+                  />
+                </svg>
+                Dark
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ---------------------------------------------- with readings -->
+      <section data-panel="data">
+        <div class="status">
+          <div>
+            <p class="label">Connection</p>
+            <p class="value"><span class="pill pill--ok">Connected</span></p>
+          </div>
+          <div>
+            <p class="label">Monitoring</p>
+            <p class="value">Active</p>
+          </div>
+          <div>
+            <p class="label">Last probe</p>
+            <p class="value">2 seconds ago</p>
+          </div>
+        </div>
+
+        <div class="hero">
+          <div class="hero-primary">
+            <p class="label">Latency</p>
+            <p class="hero-figure">
+              14<span class="hero-unit">ms</span>
+            </p>
+            <p class="tile-foot" style="margin: 0">
+              <span>Measured 2 seconds ago</span>
+              <span class="pill pill--ok">Healthy</span>
+            </p>
+          </div>
+
+          <div class="hero-dark">
+            <p class="label">Status</p>
+            <p class="hero-word">Everything is fine</p>
+            <p class="hero-note" style="font-size: var(--text-micro); margin: 0">
+              Last change 3 days ago
+            </p>
+          </div>
+        </div>
+
+        <div class="tiles">
+          <article class="tile">
+            <p class="label">Latency</p>
+            <p class="tile-figure">14 ms</p>
+            <div class="tile-foot">
+              <span>Measured 2s ago</span>
+              <span class="pill pill--ok">Measured</span>
+            </div>
+          </article>
+
+          <article class="tile">
+            <p class="label">Packet loss</p>
+            <p class="tile-figure">0.0 %</p>
+            <div class="tile-foot">
+              <span>Last 60 seconds</span>
+              <span class="pill pill--ok">Measured</span>
+            </div>
+          </article>
+
+          <article class="tile">
+            <p class="label">Download</p>
+            <p class="tile-figure">92.4 Mbps</p>
+            <div class="tile-foot">
+              <span>5 seconds ago</span>
+              <span class="pill pill--warn">Calculated</span>
+            </div>
+          </article>
+
+          <article class="tile">
+            <p class="label">Upload</p>
+            <p class="tile-figure">18.7 Mbps</p>
+            <div class="tile-foot">
+              <span>5 seconds ago</span>
+              <span class="pill pill--warn">Calculated</span>
+            </div>
+          </article>
+        </div>
+
+        <!-- Sample data for the mockup only. Real readings arrive with the
+             monitoring loop in feature 2b. -->
+        <div class="chart-card">
+          <div class="chart-head">
+            <div>
+              <p class="label">Latency history</p>
+              <p class="chart-figure">
+                <span class="chart-value" id="chart-value">14 ms</span>
+                <span class="chart-delta chart-delta--bad" id="chart-delta">
+                  +2.4 ms
+                </span>
+              </p>
+            </div>
+            <div class="range" role="group" aria-label="Time range">
+              <button type="button" data-range="1m" aria-pressed="true">1m</button>
+              <button type="button" data-range="5m" aria-pressed="false">5m</button>
+              <button type="button" data-range="15m" aria-pressed="false">15m</button>
+              <button type="button" data-range="1h" aria-pressed="false">1h</button>
+            </div>
+          </div>
+          <div class="chart-frame">
+            <svg
+              id="chart"
+              viewBox="0 0 720 200"
+              role="img"
+              aria-label="Latency over the last minute, in milliseconds"
+            ></svg>
+          </div>
+          <p class="chart-note">
+            Sample data for this mockup. Not real measurements.
+          </p>
+        </div>
+      </section>
+
+      <!-- -------------------------------------------------- first run -->
+      <section data-panel="empty" hidden>
+        <div class="status">
+          <div>
+            <p class="label">Connection</p>
+            <p class="value"><span class="pill pill--neutral">Unknown</span></p>
+          </div>
+          <div>
+            <p class="label">Monitoring</p>
+            <p class="value">Not started</p>
+          </div>
+          <div>
+            <p class="label">Last probe</p>
+            <p class="value">Never</p>
+          </div>
+        </div>
+
+        <div class="hero">
+          <div class="hero-primary">
+            <p class="label">Latency</p>
+            <p class="hero-figure empty">No reading</p>
+            <p class="tile-foot" style="margin: 0">
+              <span>Waiting for the first probe</span>
+              <span class="pill pill--neutral">No reading</span>
+            </p>
+          </div>
+
+          <div class="hero-dark">
+            <p class="label">Status</p>
+            <p class="hero-word">Nothing measured yet</p>
+            <p class="hero-note" style="font-size: var(--text-micro); margin: 0">
+              The app has not run a probe
+            </p>
+          </div>
+        </div>
+
+        <div class="tiles">
+          <article class="tile">
+            <p class="label">Latency</p>
+            <p class="tile-empty">No reading</p>
+            <div class="tile-foot">
+              <span>Nothing measured yet</span>
+              <span class="pill pill--neutral">Unavailable</span>
+            </div>
+          </article>
+          <article class="tile">
+            <p class="label">Packet loss</p>
+            <p class="tile-empty">No reading</p>
+            <div class="tile-foot">
+              <span>Nothing measured yet</span>
+              <span class="pill pill--neutral">Unavailable</span>
+            </div>
+          </article>
+          <article class="tile">
+            <p class="label">Download</p>
+            <p class="tile-empty">No reading</p>
+            <div class="tile-foot">
+              <span>Router counters not read</span>
+              <span class="pill pill--neutral">Unavailable</span>
+            </div>
+          </article>
+          <article class="tile">
+            <p class="label">Upload</p>
+            <p class="tile-empty">No reading</p>
+            <div class="tile-foot">
+              <span>Router counters not read</span>
+              <span class="pill pill--neutral">Unavailable</span>
+            </div>
+          </article>
+        </div>
+
+        <!-- No chart on first run. An empty grid would be decoration pretending
+             to be history, and the plan forbids charts that imply data. -->
+        <div class="chart-card">
+          <div class="chart-head">
+            <div>
+              <p class="label">Latency history</p>
+              <p class="chart-figure">
+                <span class="chart-value" style="color: var(--ink-faint)">
+                  No reading
+                </span>
+              </p>
+            </div>
+          </div>
+          <div class="chart-empty">
+            <span>No readings to plot yet</span>
+            <span style="font-family: var(--font-mono); font-size: var(--text-micro)">
+              history starts when monitoring does
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <h2 class="label section-label">Status vocabulary</h2>
+      <div class="gallery">
+        <span class="pill pill--ok">Connected</span>
+        <span class="pill pill--warn">Degraded</span>
+        <span class="pill pill--alert">Offline</span>
+        <span class="pill pill--neutral">Paused</span>
+        <span class="pill pill--neutral">Unknown</span>
+        <span class="pill pill--warn">Stale</span>
+        <span class="pill pill--ok">Calculated</span>
+      </div>
+
+      <div class="notice">
+        <strong>Router statistics unavailable.</strong>
+        <span>Internet monitoring is unaffected.</span>
+      </div>
+
+      <h2 class="label section-label">Menu-bar panel</h2>
+      <p style="font-size: var(--text-label); color: var(--ink-faint); margin: 0">
+        Open <code>panel.html</code> to see the menu-bar panel at its real 340x460
+        size.
+      </p>
+    </div>
+
+    <script>
+      (function () {
+        var root = document.documentElement;
+        var darkQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+        /* ------------------------------------------------ appearance menu */
+
+        var TRIGGER_ICONS = {
+          light:
+            '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.5v1.75M8 12.75v1.75M1.5 8h1.75M12.75 8h1.75M3.4 3.4l1.24 1.24M11.36 11.36l1.24 1.24M12.6 3.4l-1.24 1.24M4.64 11.36L3.4 12.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+          dark:
+            '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M13.5 9.6A5.9 5.9 0 0 1 6.4 2.5a5.9 5.9 0 1 0 7.1 7.1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+          system:
+            '<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 2.5a5.5 5.5 0 0 0 0 11z" fill="currentColor"/></svg>',
+        };
+
+        var trigger = document.getElementById("appearance-trigger");
+        var menu = document.getElementById("appearance-menu");
+        var mode = "system";
+        var renderedMode = null;
+
+        function resolved(m) {
+          return m === "system" ? (darkQuery.matches ? "dark" : "light") : m;
+        }
+
+        function paintAppearance() {
+          root.setAttribute("data-theme", resolved(mode));
+
+          // Rewrite the icon only when the chosen mode actually changes.
+          // Replacing it on every paint detaches the icon node in the middle of
+          // the click that triggered it, and the document-level click handler
+          // then cannot see the target as inside the trigger, so it closes the
+          // menu the same click just opened.
+          if (renderedMode !== mode) {
+            trigger.innerHTML = TRIGGER_ICONS[mode];
+            renderedMode = mode;
+          }
+          trigger.setAttribute("aria-expanded", String(!menu.hidden));
+          document.querySelectorAll("[data-mode]").forEach(function (option) {
+            option.setAttribute(
+              "aria-checked",
+              String(option.getAttribute("data-mode") === mode),
+            );
+          });
+        }
+
+        trigger.addEventListener("click", function () {
+          menu.hidden = !menu.hidden;
+          paintAppearance();
+        });
+
+        document.addEventListener("click", function (event) {
+          // contains(), not an identity check: the trigger holds an SVG icon, so a
+          // click on the glyph reports the path as the target, and an identity
+          // check would close the menu the click had just opened.
+          if (
+            !menu.hidden &&
+            !menu.contains(event.target) &&
+            !trigger.contains(event.target)
+          ) {
+            menu.hidden = true;
+            paintAppearance();
+          }
+        });
+
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape" && !menu.hidden) {
+            menu.hidden = true;
+            paintAppearance();
+            trigger.focus();
+          }
+        });
+
+        document.querySelectorAll("[data-mode]").forEach(function (option) {
+          option.addEventListener("click", function () {
+            mode = option.getAttribute("data-mode");
+            menu.hidden = true;
+            paintAppearance();
+          });
+        });
+
+        darkQuery.addEventListener("change", paintAppearance);
+
+        /* ------------------------------------------------------- view toggle */
+
+        document.querySelectorAll("[data-view]").forEach(function (button) {
+          button.addEventListener("click", function () {
+            var view = button.getAttribute("data-view");
+            document.querySelectorAll("[data-view]").forEach(function (other) {
+              other.setAttribute("aria-pressed", String(other === button));
+            });
+            document.querySelectorAll("[data-panel]").forEach(function (panel) {
+              panel.hidden = panel.getAttribute("data-panel") !== view;
+            });
+          });
+        });
+
+        /* ------------------------------------------------------------- chart */
+
+        var svg = document.getElementById("chart");
+        var valueLabel = document.getElementById("chart-value");
+        var deltaLabel = document.getElementById("chart-delta");
+
+        var W = 720;
+        var H = 200;
+        var PAD = { top: 14, right: 10, bottom: 22, left: 34 };
+
+        // Sample series for the mockup. Real readings arrive with feature 2b.
+        var RANGES = {
+          "1m": { seed: 7, base: 17, jitter: 5, drift: 2, count: 64, gap: [40, 47], spanSec: 60 },
+          "5m": { seed: 21, base: 21, jitter: 8, drift: 6, count: 64, gap: null, spanSec: 300 },
+          "15m": { seed: 33, base: 26, jitter: 13, drift: 11, count: 48, gap: null, spanSec: 900 },
+          "1h": { seed: 51, base: 34, jitter: 17, drift: 9, count: 40, gap: [26, 30], spanSec: 3600 },
+        };
+
+        // A tiny deterministic generator, so the mockup draws the same curve on
+        // every reload instead of inventing a new history each time.
+        function series(config) {
+          var state = config.seed;
+          var values = [];
+          var value = config.base;
+
+          for (var i = 0; i < config.count; i++) {
+            state = (state * 1664525 + 1013904223) % 4294967296;
+            var noise = state / 4294967296 - 0.5;
+            value += noise * config.jitter + (config.drift / config.count);
+            values.push(Math.max(4, Math.round(value * 10) / 10));
+          }
+
+          if (config.gap) {
+            for (var g = config.gap[0]; g <= config.gap[1]; g++) {
+              values[g] = null;
+            }
+          }
+
+          return values;
+        }
+
+        function smoothPath(points) {
+          if (points.length < 2) return "";
+          var d = "M" + points[0][0] + "," + points[0][1];
+          for (var i = 0; i < points.length - 1; i++) {
+            var current = points[i];
+            var next = points[i + 1];
+            var midX = (current[0] + next[0]) / 2;
+            d += " C" + midX + "," + current[1] + " " + midX + "," + next[1] + " " + next[0] + "," + next[1];
+          }
+          return d;
+        }
+
+        function draw(rangeKey) {
+          var config = RANGES[rangeKey];
+          var values = series(config);
+
+          var present = values.filter(function (v) {
+            return v !== null;
+          });
+          var min = Math.min.apply(null, present);
+          var max = Math.max.apply(null, present);
+          var span = Math.max(max - min, 8);
+          var low = min - span * 0.25;
+          var high = max + span * 0.25;
+
+          var plotW = W - PAD.left - PAD.right;
+          var plotH = H - PAD.top - PAD.bottom;
+          var step = plotW / (values.length - 1);
+
+          function x(i) {
+            return PAD.left + i * step;
+          }
+
+          function y(v) {
+            return PAD.top + plotH - ((v - low) / (high - low)) * plotH;
+          }
+
+          // Split into runs of present values so a gap stays a gap.
+          var runs = [];
+          var run = [];
+          values.forEach(function (v, i) {
+            if (v === null) {
+              if (run.length) runs.push(run);
+              run = [];
+            } else {
+              run.push([x(i), y(v)]);
+            }
+          });
+          if (run.length) runs.push(run);
+
+          var parts = [
+            // The wash is a real gradient, not a flat fill. The stops read the
+            // chart tokens so dark mode gets its own wash for free.
+            '<defs><linearGradient id="chart-wash" x1="0" y1="0" x2="0" y2="1">' +
+              '<stop offset="0%" stop-color="var(--chart-area-top)"/>' +
+              '<stop offset="100%" stop-color="var(--chart-area-bottom)"/>' +
+              "</linearGradient></defs>",
+          ];
+
+          // Horizontal grid with mono value labels.
+          for (var g = 0; g <= 3; g++) {
+            var gy = PAD.top + (plotH / 3) * g;
+            var value = high - ((high - low) / 3) * g;
+            parts.push('<line class="chart-grid-line" x1="' + PAD.left + '" y1="' + gy + '" x2="' + (W - PAD.right) + '" y2="' + gy + '"/>');
+            parts.push('<text class="chart-axis-label" x="0" y="' + (gy + 3) + '">' + Math.round(value) + '</text>');
+          }
+
+          // Time labels along the bottom. The span comes from the range, so the four
+          // labels genuinely differ instead of all naming the same minute.
+          for (var t = 0; t <= 3; t++) {
+            var tx = PAD.left + (plotW / 3) * t;
+            var secondsAgo = Math.round((config.spanSec * (3 - t)) / 3);
+            var stamp = new Date(Date.now() - secondsAgo * 1000);
+            parts.push(
+              '<text class="chart-axis-label" x="' + tx + '" y="' + (H - 6) + '" text-anchor="' + (t === 0 ? "start" : t === 3 ? "end" : "middle") + '">' +
+                String(stamp.getHours()).padStart(2, "0") + ":" + String(stamp.getMinutes()).padStart(2, "0") +
+                "</text>",
+            );
+          }
+
+          // The wash under the line, only across the runs that have data.
+          runs.forEach(function (points) {
+            if (points.length < 2) return;
+            var line = smoothPath(points);
+            var baseline = PAD.top + plotH;
+            var area =
+              line +
+              " L" + points[points.length - 1][0] + "," + baseline +
+              " L" + points[0][0] + "," + baseline + " Z";
+            parts.push('<path class="chart-area" d="' + area + '"/>');
+          });
+
+          // The line itself, then the dashed bridge across each gap.
+          runs.forEach(function (points) {
+            if (points.length < 2) return;
+            parts.push('<path class="chart-line" d="' + smoothPath(points) + '"/>');
+          });
+
+          for (var r = 0; r < runs.length - 1; r++) {
+            var endOfRun = runs[r][runs[r].length - 1];
+            var startOfNext = runs[r + 1][0];
+            parts.push(
+              '<line class="chart-gap" x1="' + endOfRun[0] + '" y1="' + endOfRun[1] +
+                '" x2="' + startOfNext[0] + '" y2="' + startOfNext[1] + '"/>',
+            );
+          }
+
+          // Latest sample, pulsing.
+          var lastRun = runs[runs.length - 1];
+          var latest = lastRun[lastRun.length - 1];
+          parts.push('<circle class="chart-latest" cx="' + latest[0] + '" cy="' + latest[1] + '" r="3.5"/>');
+
+          svg.innerHTML = parts.join("");
+
+          // Headline numbers follow the drawn series.
+          var latestValue = present[present.length - 1];
+          var previous = present.length > 1 ? present[present.length - 6] : latestValue;
+          var delta = latestValue - previous;
+          valueLabel.textContent = latestValue.toFixed(1) + " ms";
+          deltaLabel.textContent = (delta >= 0 ? "+" : "") + delta.toFixed(1) + " ms";
+          // Latency rising is bad, so the sign maps to meaning rather than to
+          // the usual green-is-up convention.
+          deltaLabel.className = "chart-delta " + (delta >= 0 ? "chart-delta--bad" : "chart-delta--good");
+
+          // Draw the line in, then let the wash and the pulse take over.
+          var line = svg.querySelector(".chart-line");
+          if (line) {
+            var length = line.getTotalLength();
+            line.style.strokeDasharray = length;
+            line.style.strokeDashoffset = length;
+            requestAnimationFrame(function () {
+              line.style.transition = "stroke-dashoffset 1100ms cubic-bezier(0.2, 0.8, 0.2, 1)";
+              line.style.strokeDashoffset = "0";
+            });
+          }
+        }
+
+        document.querySelectorAll("[data-range]").forEach(function (button) {
+          button.addEventListener("click", function () {
+            document.querySelectorAll("[data-range]").forEach(function (other) {
+              other.setAttribute("aria-pressed", String(other === button));
+            });
+            draw(button.getAttribute("data-range"));
+          });
+        });
+
+        paintAppearance();
+        draw("1m");
+      })();
+    </script>
+  </body>
+</html>

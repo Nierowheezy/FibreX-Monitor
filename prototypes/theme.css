@@ -1,0 +1,171 @@
+/* FibreX Monitor - prototype theme
+ *
+ * Read from the real Wispr Flow site's computed styles rather than a style
+ * document, which is what corrected the earlier attempt. The biggest correction:
+ * their 2px ink border is an accent used three times on the whole page, not the
+ * default. Most surfaces carry a 1px hairline and a 16px radius. Over-applying
+ * that border is what made the first build read dated rather than modern.
+ *
+ * Colour, type, shape, depth and motion for every mockup. One file, so a tweak
+ * here restyles them all.
+ *
+ * Documented derivations, because the source palette is tuned for a marketing
+ * site rather than for a dense desktop utility:
+ *   1. Status tints are mixed from each status ink at 14% over the canvas, so no
+ *      tint literal exists and both modes follow automatically.
+ *   2. Amber is a fill colour on their site and fails contrast as text, so
+ *      --warn is Ember darkened for text and --warn-fill keeps the bright amber.
+ *   3. Coral is their alert colour; --alert darkens it for text on cream.
+ *   4. Numerals stay in Figtree. EB Garamond has no tabular figures, and the
+ *      reference reserves the serif for display type only.
+ */
+
+@import url("https://fonts.googleapis.com/css2?family=EB+Garamond:wght@400;500&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap");
+
+:root {
+  /* Surfaces. Cream canvas, off-white cards, one dark focal card. */
+  --canvas: #ffffeb;
+  --surface: #fffdf9;
+  --surface-sunken: #e4e4d0;
+  --surface-dark: #1a1a1a;
+
+  /* Ink. Muted and faint are alpha of the same ink, as on their site. */
+  --ink: #1a1a1a;
+  --ink-muted: rgba(26, 26, 26, 0.7);
+  --ink-faint: rgba(26, 26, 26, 0.5);
+  --ink-invert: #ffffeb;
+  --ink-warm: #a39d8e;
+
+  /* Borders. Hairline by default; ink is an accent, not a frame. */
+  --hairline: #d1d1c1;
+  --hairline-soft: #eeebe3;
+  --border-ink: 2px solid var(--ink);
+  --border-hairline: 1px solid var(--hairline);
+
+  /* Accents, all read from the live site. */
+  --accent: #f0d7ff;
+  --accent-ink: #1a1a1a;
+  --accent-soft: #f6ecff;
+  --highlight: #ffbcf2;
+
+  /* Foreground for anything sitting on the lavender fill. These do not change in
+     dark mode because the fill does not: the accent stays lavender, so cream
+     text on it would be unreadable. */
+  --on-accent: #1a1a1a;
+  --on-accent-muted: rgba(26, 26, 26, 0.64);
+
+  --ok: #034f46;
+  --ok-fill: #034f46;
+  --warn: #8a4b06;
+  --warn-fill: #ffa946;
+  --alert: #b3271a;
+  --alert-fill: #ff6c4c;
+  --neutral: #6b6b5e;
+  --neutral-fill: #a39d8e;
+
+  --ok-tint: color-mix(in srgb, var(--ok) 14%, var(--canvas));
+  --warn-tint: color-mix(in srgb, var(--warn) 14%, var(--canvas));
+  --alert-tint: color-mix(in srgb, var(--alert) 12%, var(--canvas));
+  --neutral-tint: color-mix(in srgb, var(--neutral) 12%, var(--canvas));
+
+  /* Type. Figtree for every interface surface, EB Garamond for display only. */
+  --font-display: "EB Garamond", Georgia, "Times New Roman", serif;
+  --font-ui:
+    "Figtree", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --text-display: 2.5rem;
+  --text-title: 1.75rem;
+  --text-metric: 1.75rem;
+  --text-body: 0.9375rem;
+  --text-label: 0.75rem;
+  --text-micro: 0.6875rem;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Tracking. Display pulls in, small text pushes out. Both from the site. */
+  --tracking-display: -0.03em;
+  --tracking-title: -0.02em;
+  --tracking-label: 0.015em;
+  --tracking-micro: 0.03em;
+
+  /* Space */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  /* Shape. 16px is the radius their cards actually use. */
+  --radius-card: 16px;
+  --radius-card-lg: 32px;
+  --radius-hero: 48px;
+  --radius-control: 12px;
+  --radius-pill: 999px;
+
+  /* Depth. Their site uses one subtle shadow on the whole page. */
+  --shadow-soft: 0 1px 3px rgba(26, 26, 26, 0.06);
+  --shadow-pop: 0 18px 40px -20px rgba(26, 26, 26, 0.35);
+
+  --shell-max: 1120px;
+  --motion: 160ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* Chart. A market-style area chart: ink line, accent wash, and a gap drawn as
+     a gap rather than bridged, because the plan forbids interpolating fake
+     continuity across missing samples. */
+  --chart-grid: rgba(26, 26, 26, 0.07);
+  --chart-line: #1a1a1a;
+  --chart-area-top: rgba(240, 215, 255, 0.85);
+  --chart-area-bottom: rgba(240, 215, 255, 0);
+  --chart-dot: #1a1a1a;
+  --chart-good: #034f46;
+  --chart-bad: #b3271a;
+}
+
+/* Dark mode keeps the cream as ink, which is the reference's own inversion. */
+:root[data-theme="dark"] {
+  --canvas: #1a1a1a;
+  --surface: #232323;
+  --surface-sunken: #2e2e2a;
+  --surface-dark: #ffffeb;
+
+  --ink: #ffffeb;
+  --ink-muted: rgba(255, 255, 235, 0.72);
+  --ink-faint: rgba(255, 255, 235, 0.5);
+  --ink-invert: #1a1a1a;
+  --ink-warm: #8f8a7c;
+
+  --hairline: rgba(255, 255, 235, 0.16);
+  --hairline-soft: rgba(255, 255, 235, 0.08);
+
+  --accent: #f0d7ff;
+  --accent-soft: #2c2340;
+  --highlight: #ffbcf2;
+
+  --ok: #5fd0b8;
+  --ok-fill: #5fd0b8;
+  --warn: #ffb765;
+  --warn-fill: #ffa946;
+  --alert: #ff8b7a;
+  --alert-fill: #ff6c4c;
+  --neutral: #d6d1c2;
+  --neutral-fill: #a39d8e;
+
+  --shadow-soft: none;
+  --shadow-pop: 0 18px 40px -20px rgba(0, 0, 0, 0.8);
+
+  --chart-grid: rgba(255, 255, 235, 0.08);
+  --chart-line: #ffffeb;
+  --chart-area-top: rgba(240, 215, 255, 0.28);
+  --chart-area-bottom: rgba(240, 215, 255, 0);
+  --chart-dot: #ffffeb;
+  --chart-good: #5fd0b8;
+  --chart-bad: #ff8b7a;
+}

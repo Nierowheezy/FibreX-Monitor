@@ -1,0 +1,593 @@
+@import "tailwindcss";
+
+/*
+ * Fonts are bundled, never fetched. The app is local-first, so a CDN font would
+ * leave the window unstyled when offline. Latin subset only, which is all the UI
+ * ships. Figtree, JetBrains Mono and Outfit are variable fonts, so one file
+ * covers every weight of each.
+ *
+ * Three families with three jobs: Outfit for display and figures, Figtree for
+ * interface text, JetBrains Mono for anything that is a measured value or a
+ * timestamp so digits align down a column.
+ */
+@font-face {
+  font-family: "Outfit";
+  src: url("../assets/fonts/outfit-latin-var.woff2") format("woff2-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Figtree";
+  src: url("../assets/fonts/figtree-latin-var.woff2") format("woff2-variations");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("../assets/fonts/jetbrains-mono-latin-var.woff2") format("woff2-variations");
+  font-weight: 300 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
+ * Design tokens, ported from prototypes-new/theme.css.
+ *
+ * The direction is a dark native utility: near-black canvas, elevated graphite
+ * cards, one ember accent used sparingly, and a bento layout where each card
+ * owns one fact. Depth is a hairline plus a one-step surface lift; only things
+ * that float (the rail, popovers, the menu-bar panel) carry a shadow.
+ *
+ * Every token name is declared once here so Tailwind emits the matching
+ * utilities, and the light block below overrides the values. A component asks
+ * for `bg-surface` or `rounded-card` and both modes follow, because the utility
+ * resolves the variable at its own call site.
+ *
+ * This is the only file in src/ allowed to contain a colour literal.
+ */
+@theme static {
+  /* Surfaces. Each step is a real elevation, not an alpha overlay, so stacking
+     stays predictable. */
+  --color-canvas: #09090b;
+  --color-surface: #121215;
+  --color-surface-2: #191920;
+  --color-surface-3: #212129;
+  --color-surface-4: #2a2a33;
+  --color-overlay: rgba(12, 12, 14, 0.72);
+
+  /* Ink. Muted, faint and dim are alpha of the same ink. */
+  --color-ink: #f4f4f6;
+  --color-ink-muted: rgba(244, 244, 246, 0.62);
+  --color-ink-faint: rgba(244, 244, 246, 0.36);
+  --color-ink-dim: rgba(244, 244, 246, 0.22);
+  --color-on-ember: #140800;
+
+  /* Hairlines. */
+  --color-hairline: rgba(255, 255, 255, 0.07);
+  --color-hairline-2: rgba(255, 255, 255, 0.12);
+
+  /* The single accent. */
+  --color-ember: #ff5a1c;
+  --color-ember-bright: #ff7a45;
+  --color-ember-wash: rgba(255, 90, 28, 0.14);
+
+  /*
+   * Status ramp, kept distinct from the accent on purpose: an orange status
+   * would collide with the accent at small sizes. Each colour is always paired
+   * with a text label in the UI, never colour alone.
+   */
+  --color-good: #34d399;
+  --color-good-wash: rgba(52, 211, 153, 0.13);
+  --color-warn: #fbbf24;
+  --color-warn-wash: rgba(251, 191, 36, 0.13);
+  --color-bad: #fb5a5a;
+  --color-bad-wash: rgba(251, 90, 90, 0.13);
+  --color-idle: #a1a1aa;
+  --color-idle-wash: rgba(161, 161, 170, 0.12);
+
+  /* Type. */
+  --font-sans:
+    "Figtree", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial,
+    sans-serif;
+  --font-display: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --text-figure-lg: 3.5rem;
+  --text-figure-lg--line-height: 1;
+  --text-figure: 2.75rem;
+  --text-figure--line-height: 1;
+  --text-display: 1.5rem;
+  --text-display--line-height: 1.9rem;
+  --text-title: 1.0625rem;
+  --text-title--line-height: 1.4rem;
+  --text-body: 0.9375rem;
+  --text-body--line-height: 1.4rem;
+  --text-small: 0.8125rem;
+  --text-small--line-height: 1.2rem;
+  --text-label: 0.75rem;
+  --text-label--line-height: 1rem;
+  --text-micro: 0.6875rem;
+  --text-micro--line-height: 0.95rem;
+
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Tracking. Display pulls in, small text pushes out. */
+  --tracking-figure: -0.03em;
+  --tracking-display: -0.02em;
+  --tracking-title: -0.01em;
+  --tracking-label: 0.06em;
+  --tracking-micro: 0.06em;
+
+  /* Shape. */
+  --radius-card: 20px;
+  --radius-inner: 12px;
+  --radius-control: 12px;
+  --radius-chip: 10px;
+  --radius-pill: 999px;
+
+  /* Depth. Only floating things get a shadow. Cards get a hairline instead. */
+  --shadow-float: 0 24px 60px -24px rgba(0, 0, 0, 0.85);
+  --shadow-pop: 0 18px 40px -20px rgba(0, 0, 0, 0.7);
+
+  /*
+   * Semantic spacing, derived from the scale in :root rather than hard-coded.
+   * These must be declared here and not in :root, because Tailwind only emits
+   * utilities for @theme keys: left outside, `gap-stack` and `p-card-pad`
+   * silently generate nothing and the whole layout collapses.
+   */
+  --spacing-gutter: var(--s6);
+  --spacing-card-pad: var(--s5);
+  --spacing-stack: var(--s4);
+  --spacing-row: var(--s3);
+  --spacing-gap: var(--s2);
+}
+
+/*
+ * Layout tokens and anything Tailwind has no namespace for. The spacing scale
+ * and the chart palette live here because neither is a colour the theme swaps by
+ * name; the light block below overrides the chart values only.
+ */
+:root {
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s7: 32px;
+
+  --border-hairline: 1px solid var(--color-hairline);
+
+  --shell-max: 1480px;
+  --rail-w: 72px;
+  --panel-w: 340px;
+  --icon-size: 16px;
+  --control-size: 40px;
+  --motion: 170ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /*
+   * The canvas is not a flat fill.
+   *
+   * Two soft radial pools sit behind everything: a warm ember wash top-left and
+   * a cool one bottom-right. Without them a near-black canvas reads as a
+   * screenshot of an empty div. The pools are ember-free in the sense that
+   * neither is the accent at full strength, so nothing competes with the mark.
+   */
+  --vignette-warm: rgba(255, 90, 28, 0.07);
+  --vignette-cool: rgba(90, 120, 255, 0.05);
+
+  /*
+   * The hero card's own surface, which is a step warmer and lighter than a
+   * standard card so the focal reading sits on the brightest thing on screen.
+   */
+  --hero-wash: rgba(255, 90, 28, 0.16);
+  --hero-gradient-start: #17171d;
+  --hero-gradient-mid: #0e0e12;
+  --hero-gradient-end: #0b0b0e;
+
+  /* Chart. Read by the hand-built SVG chart; no Tailwind namespace. */
+  --chart-grid: rgba(255, 255, 255, 0.05);
+  --chart-line: rgba(255, 255, 255, 0.85);
+  --chart-area-top: rgba(255, 90, 28, 0.3);
+  --chart-area-bottom: rgba(255, 90, 28, 0);
+  --chart-dot: #ff5a1c;
+  --chart-good: #34d399;
+  --chart-bad: #fb5a5a;
+  --chart-gap: rgba(255, 255, 255, 0.3);
+
+  color-scheme: dark;
+}
+
+/*
+ * Light mode is a real inversion, not the same dark layout with light ink: the
+ * surfaces lift instead of sink, so the elevation ladder still reads correctly.
+ */
+:root[data-theme="light"] {
+  --color-canvas: #f2f2f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #f7f7f9;
+  --color-surface-3: #eeeef2;
+  --color-surface-4: #e3e3e9;
+  --color-overlay: rgba(255, 255, 255, 0.78);
+
+  --color-ink: #101014;
+  --color-ink-muted: rgba(16, 16, 20, 0.62);
+  --color-ink-faint: rgba(16, 16, 20, 0.4);
+  --color-ink-dim: rgba(16, 16, 20, 0.24);
+  --color-on-ember: #ffffff;
+
+  --color-hairline: rgba(16, 16, 20, 0.09);
+  --color-hairline-2: rgba(16, 16, 20, 0.16);
+
+  --color-ember: #ef4a0c;
+  --color-ember-bright: #d93f06;
+  --color-ember-wash: rgba(239, 74, 12, 0.1);
+
+  --color-good: #0f9b6c;
+  --color-good-wash: rgba(15, 155, 108, 0.12);
+  --color-warn: #b0730a;
+  --color-warn-wash: rgba(176, 115, 10, 0.13);
+  --color-bad: #d1332f;
+  --color-bad-wash: rgba(209, 51, 47, 0.12);
+  --color-idle: #6f6f7a;
+  --color-idle-wash: rgba(111, 111, 122, 0.1);
+
+  --shadow-float: 0 24px 50px -26px rgba(16, 16, 20, 0.4);
+  --shadow-pop: 0 18px 40px -22px rgba(16, 16, 20, 0.32);
+
+  --vignette-warm: rgba(239, 74, 12, 0.06);
+  --vignette-cool: rgba(60, 90, 220, 0.05);
+
+  --hero-wash: rgba(239, 74, 12, 0.16);
+  --hero-gradient-start: #ffffff;
+  --hero-gradient-mid: #fbf6f3;
+  --hero-gradient-end: #f2edeb;
+
+  --chart-grid: rgba(16, 16, 20, 0.07);
+  --chart-line: rgba(16, 16, 20, 0.8);
+  --chart-area-top: rgba(239, 74, 12, 0.22);
+  --chart-area-bottom: rgba(239, 74, 12, 0);
+  --chart-dot: #ef4a0c;
+  --chart-good: #0f9b6c;
+  --chart-bad: #d1332f;
+  --chart-gap: rgba(16, 16, 20, 0.28);
+
+  color-scheme: light;
+}
+
+/*
+ * Utilities Tailwind has no namespace for. Naming them here rather than writing
+ * literal values in components keeps the token-only rule intact.
+ */
+@utility hairline {
+  border: var(--border-hairline);
+}
+
+/* A single rule under a region. Needed because `hairline` sets all four sides,
+   and a later border-x-0 cannot reliably undo a shorthand from a custom
+   utility. */
+@utility hairline-b {
+  border-bottom: var(--border-hairline);
+}
+
+@utility rule-soft-b {
+  border-bottom: 1px solid var(--color-hairline-2);
+}
+
+/* The one card treatment: an elevated surface, a hairline, no shadow. */
+@utility card {
+  background-color: var(--color-surface);
+  border: var(--border-hairline);
+  border-radius: var(--radius-card);
+}
+
+/*
+ * The hero card's surface: a warm pool in the top-left over a soft vertical
+ * ramp, so the focal reading sits on the brightest thing on screen.
+ *
+ * It is deliberately not `card`. A standard card is a flat fill by design, and
+ * this one has a focal job that a flat fill cannot do; in light mode a plain
+ * white card would also vanish against a white canvas. Both themes ramp from
+ * their own tokens, so the pair stays in step with the rest of the palette.
+ */
+@utility hero-surface {
+  background:
+    radial-gradient(900px 460px at 20% 0%, var(--hero-wash), transparent 62%),
+    linear-gradient(
+      160deg,
+      var(--hero-gradient-start) 0%,
+      var(--hero-gradient-mid) 58%,
+      var(--hero-gradient-end) 100%
+    );
+}
+
+/* Small caps section label: the tracking is the point, so it is one utility. */
+@utility label-caps {
+  font-size: var(--text-micro);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-ink-faint);
+}
+
+/* Keeps a numeric column aligned while the value changes. */
+@utility tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * The live indicator: a small dot that breathes.
+ *
+ * It is never the only signal. Wherever it appears, a word beside it says the
+ * same thing, because a colour alone is not an announcement a screen reader can
+ * read and a colourblind reader cannot trust.
+ *
+ * The colour is left to the call site, which pairs it with `bg-ember` or
+ * `bg-idle`. Setting it here would fight that utility for the same property.
+ */
+@utility live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  animation: live-pulse 2s ease-in-out infinite;
+  flex: none;
+}
+
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+/*
+ * The hero's chart layer.
+ *
+ * The chart is full bleed behind the card, and the headline owns the top-left
+ * of that card, so the line is masked away from it rather than competing with
+ * it. The mask is a diagonal, because the headline and the figure together
+ * sit on the left and the line is meant to be clearest on the right.
+ */
+@utility hero-chart-mask {
+  -webkit-mask-image: linear-gradient(
+    155deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.18) 32%,
+    #000 68%
+  );
+  mask-image: linear-gradient(155deg, transparent 0%, rgba(0, 0, 0, 0.18) 32%, #000 68%);
+}
+
+/*
+ * A translucent capsule that floats over the hero.
+ *
+ * The blur is here rather than dropped: the hero is the one place with a chart
+ * behind it, and a solid badge over a moving line reads as a sticker.
+ */
+@utility glass-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  height: 32px;
+  padding: 0 var(--s3);
+  border-radius: var(--radius-pill);
+  background: rgba(8, 8, 10, 0.5);
+  border: 1px solid var(--color-hairline);
+  backdrop-filter: blur(12px);
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-ink-muted);
+}
+
+:root[data-theme="light"] .glass-badge {
+  background: rgba(255, 255, 255, 0.66);
+}
+
+/*
+ * The chart's two animations. They live here rather than in the component so the
+ * SVG stays declarative and the timing sits beside the motion tokens.
+ */
+@keyframes chart-wash {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes chart-pulse {
+  /*
+   * Opacity only.
+   *
+   * The dot marks where the current reading is, and it breathes by fading. It
+   * does not grow, because a dot that expands past its own size reads as a
+   * second mark appearing rather than as the same one still being there, and it
+   * ends up sitting outside the axis it belongs to.
+   */
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/*
+ * A screen arriving.
+ *
+ * The fade and the small rise are what make a change of screen feel like a
+ * change of screen rather than a jump. It is short on purpose: long enough to
+ * read as movement, short enough that a person clicking through the rail is
+ * never waiting for it.
+ */
+@keyframes screen-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/*
+ * Element defaults live in `@layer base` on purpose.
+ *
+ * Unlayered CSS beats every `@layer`, including Tailwind's `utilities`, so an
+ * unlayered `button { color: inherit }` here silently defeated `text-canvas` on
+ * any button carrying it. That is what made the active rail icon paint
+ * near-white on its own near-white pill. Declaring the layer keeps the defaults
+ * as defaults, so a utility on the element still wins.
+ */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  /* A stacking context above the body vignette, so the shell and everything in
+     it paints on top of the backdrop and nothing behind it can show through a
+     card. `isolation: isolate` keeps that local instead of relying on z-index
+     bookkeeping across components. */
+  #root {
+    position: relative;
+    isolation: isolate;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /*
+   * The canvas is not a flat fill.
+   *
+   * Two soft radial pools sit behind everything: a warm wash top-left and a cool
+   * one bottom-right. Without them a near-black canvas reads as a screenshot of
+   * an empty div, which is exactly how the app looked next to the prototype.
+   *
+   * `position: fixed` and `pointer-events: none` keep it a backdrop: it cannot
+   * scroll, catch a click, or intercept anything. `z-index: 0` puts it above the
+   * body's own canvas fill but below the app shell, which sits in a later
+   * stacking context (see `#root` below), so no card, rail or control is dimmed.
+   */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(900px 600px at 12% -10%, var(--vignette-warm), transparent 60%),
+      radial-gradient(800px 700px at 100% 100%, var(--vignette-cool), transparent 65%);
+    z-index: 0;
+  }
+
+  h1,
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+}
+
+/* The focus ring is ember, the one accent, so keyboard focus is unambiguous. */
+:focus-visible {
+  outline: 2px solid var(--color-ember);
+  outline-offset: 2px;
+}
+
+/*
+ * The speed test's needle, scanning while the test runs.
+ *
+ * A speed test has always swept its needle back and forth while it measured,
+ * and this is that motion: the needle scans the scale, and the figure beside it
+ * is the real rate the transfer has reached. When the test ends the needle
+ * settles on the measured value.
+ */
+@keyframes gauge-sweep {
+  0% {
+    transform: rotate(-120deg);
+  }
+  50% {
+    transform: rotate(120deg);
+  }
+  100% {
+    transform: rotate(-120deg);
+  }
+}
+
+.gauge-sweep {
+  animation: gauge-sweep 1.6s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+/*
+ * A region that scrolls within a card, such as the incident timeline.
+ *
+ * Macs scroll with overlay bars, which appear only while scrolling; this just
+ * keeps the ones that do appear as thin as the app's hairlines, fixed to the
+ * card's edge rather than floating over the last row.
+ */
+@utility scroll-region {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+
+/*
+ * A screen arriving.
+ *
+ * Applied by keying the screen on its id, so a change of screen plays the
+ * animation again rather than leaving the new one half faded.
+ */
+@utility screen-in {
+  animation: screen-in 260ms var(--ease) both;
+}
+
+/*
+ * Reduced motion.
+ *
+ * The animations here are decoration, so when someone has asked their system
+ * for less motion they get none of it. The chart's dot stops breathing and the
+ * screens stop sliding, but nothing about what is shown changes.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .screen-in {
+    animation: none;
+  }
+
+  .gauge-sweep {
+    animation: none;
+  }
+
+  .live-dot,
+  [class*="chart-pulse"] {
+    animation: none;
+  }
+}

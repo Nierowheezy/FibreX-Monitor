@@ -1,0 +1,69 @@
+[package]
+name = "fibrex-monitor"
+version = "0.1.0"
+description = "Local-first macOS menu-bar monitor for MTN FibreX connections"
+authors = ["you"]
+edition = "2024"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "fibrex_monitor_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# `tray-icon` adds the menu-bar presence and `image-png` lets the tray icon be
+# compiled in from a template image. Neither is in the default feature set.
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Tauri already runs a tokio runtime, so this names types we already ship rather
+# than adding a second one. `macros` and `rt` exist for #[tokio::test].
+tokio = { version = "1", features = ["net", "time", "rt", "macros"] }
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+# The router client. Blocking, because it runs on a dedicated thread and a
+# request must complete or time out as a unit. `rustls` rather than the platform
+# verifier, and no default features, because the router serves a self-signed
+# certificate on HTTPS port 80 that no public root store will ever vouch for.
+ureq = { version = "3.4.2", default-features = false, features = ["rustls"] }
+
+# The macOS window's own controls.
+#
+# The green traffic-light button is pointed at the window's fullscreen action.
+# macOS's default for that button is to zoom the window, which fills the screen
+# but leaves the menu bar where it is, and a button that looks like a
+# fullscreen button should fullscreen. `objc2` and `objc2-app-kit` are already
+# in the tree through tao; naming them here makes the use of them direct.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = [
+  "NSWindow",
+  "NSButton",
+  "NSControl",
+] }
+
+# The macOS Keychain, for the router password the settings card stores. Scoped
+# to macOS because that is the platform this app is for; on other targets the
+# password store is an in-memory fallback that builds without it.
+keyring = { version = "3", features = ["apple-native"] }
+
+[dev-dependencies]
+# Enables tauri::test so commands can be exercised over the real IPC boundary
+# without opening a window. Dev-only: the release build never sees it.
+tauri = { version = "2", features = ["test"] }
+
+
+# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

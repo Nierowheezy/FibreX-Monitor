@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FibreX Monitor panel</title>
+    <link rel="stylesheet" href="theme.css" />
+    <style>
+      /* The popover is a fixed-size native surface, so every measurement here is
+         tuned to 340x520. Nothing scrolls silently: the row list is capped and
+         scrolls only when a router with many metrics overflows it. */
+      body {
+        width: 340px;
+        height: 520px;
+        overflow: hidden;
+        font-size: var(--text-small);
+        /* The real popover is rounded by the native window; in the browser this
+           is the only cue that this is a floating surface and not a page. */
+        border-radius: 14px;
+      }
+
+      /* The dashboard's vignette is a full-viewport wash; at popover size it
+         reads as a smudge, so it is replaced with a flat canvas here. */
+      body::before {
+        background: radial-gradient(300px 200px at 50% 0%, rgba(255, 90, 28, 0.1), transparent 70%);
+      }
+
+      .panel {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: var(--s5);
+        gap: var(--s3);
+      }
+
+      .panel-head {
+        display: flex;
+        align-items: center;
+        gap: var(--s2);
+      }
+
+      .panel-head svg {
+        width: 17px;
+        height: 17px;
+        flex: none;
+      }
+
+      .panel-name {
+        font-family: var(--font-display);
+        font-size: 0.875rem;
+        font-weight: var(--weight-medium);
+        letter-spacing: -0.01em;
+      }
+
+      .head-end {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: var(--s2);
+      }
+
+      .icon-btn {
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border: 0;
+        border-radius: 9px;
+        background: var(--surface-2);
+        color: var(--ink-muted);
+        transition:
+          color var(--motion) var(--ease),
+          background var(--motion) var(--ease);
+      }
+
+      .icon-btn:hover {
+        background: var(--surface-3);
+        color: var(--ink);
+      }
+
+      .icon-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* The headline reading: the one number the popover exists to show. */
+      .readout {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: var(--s3);
+      }
+
+      .readout-unit {
+        font-family: var(--font-display);
+        font-size: var(--text-body);
+        color: var(--ink-faint);
+      }
+
+      .readout-empty {
+        font-family: var(--font-display);
+        font-size: 1.75rem;
+        font-weight: var(--weight-regular);
+        letter-spacing: -0.03em;
+        color: var(--ink-faint);
+        line-height: 1.1;
+      }
+
+      .readout-figure {
+        font-family: var(--font-display);
+        font-size: 3rem;
+        font-weight: var(--weight-light);
+        letter-spacing: -0.05em;
+        line-height: 0.95;
+      }
+
+      .readout-label {
+        margin-bottom: 6px;
+        font-size: var(--text-micro);
+        letter-spacing: 0.09em;
+        text-transform: uppercase;
+        color: var(--ink-faint);
+      }
+
+      .readout-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--s2);
+        margin-top: var(--s2);
+        font-family: var(--font-mono);
+        font-size: var(--text-micro);
+        color: var(--ink-faint);
+      }
+
+      .spark {
+        height: 62px;
+        margin: 0 calc(var(--s5) * -1);
+      }
+
+      .spark svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .grid-line {
+        stroke: var(--chart-grid);
+        stroke-width: 1;
+      }
+
+      .spark-line {
+        fill: none;
+        stroke: var(--chart-line);
+        stroke-width: 1.75;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .spark-area {
+        fill: url(#panel-wash);
+      }
+
+      .spark-gap {
+        stroke: var(--chart-gap);
+        stroke-width: 1.75;
+        stroke-dasharray: 3 5;
+      }
+
+      /* Metrics as hairline rows rather than tiles: at 340px wide a tile grid
+         turns every number into a box, and the popover needs to be scannable in
+         one glance, not admired. */
+      .rows {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: var(--s3);
+        padding: 9px 0;
+        border-bottom: 1px solid var(--hairline);
+      }
+
+      .row:last-child {
+        border-bottom: 0;
+      }
+
+      .row svg {
+        width: 14px;
+        height: 14px;
+        flex: none;
+        color: var(--ink-faint);
+      }
+
+      .row-label {
+        flex: 1;
+        font-size: var(--text-small);
+        color: var(--ink-muted);
+      }
+
+      .row-value {
+        font-family: var(--font-mono);
+        font-size: var(--text-small);
+        font-weight: var(--weight-medium);
+      }
+
+      .row-value--empty {
+        color: var(--ink-faint);
+        font-family: var(--font-ui);
+        font-weight: var(--weight-regular);
+      }
+
+      .actions {
+        display: flex;
+        gap: var(--s2);
+      }
+
+      .action {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: var(--s2);
+        flex: 1;
+        height: 38px;
+        border: 0;
+        border-radius: var(--radius-inner);
+        font-size: var(--text-label);
+        font-weight: var(--weight-semibold);
+        letter-spacing: 0.01em;
+        transition:
+          background var(--motion) var(--ease),
+          color var(--motion) var(--ease);
+      }
+
+      .action svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      /* One filled action only. In a 340px popover a second filled button would
+         compete with the headline number instead of supporting it. */
+      .action--primary {
+        background: var(--ember);
+        color: #ffffff;
+      }
+
+      .action--primary:hover {
+        background: var(--ember-bright);
+      }
+
+      .action--ghost {
+        flex: none;
+        width: 96px;
+        background: var(--surface-2);
+        color: var(--ink-muted);
+      }
+
+      .action--ghost:hover {
+        background: var(--surface-3);
+        color: var(--ink);
+      }
+
+      .panel-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--s2);
+        font-family: var(--font-mono);
+        font-size: var(--text-micro);
+        color: var(--ink-faint);
+      }
+
+      .panel-foot button {
+        border: 0;
+        background: transparent;
+        padding: 0;
+        font: inherit;
+        color: var(--ink-dim);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
+
+      .panel-foot button:hover {
+        color: var(--ink-muted);
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="panel">
+      <header class="panel-head">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 2.6l3.1 5.3a4.6 4.6 0 0 0-6.2 0L12 2.6z" fill="#ff5a1c" />
+          <path d="M6.6 9.4l3.2 5.5a4.6 4.6 0 0 0-6.3 0l3.1-5.5z" fill="#ff5a1c" opacity="0.55" />
+          <path d="M17.4 9.4l-3.2 5.5a4.6 4.6 0 0 1 0-5.5z" fill="#ff5a1c" opacity="0.3" />
+        </svg>
+        <span class="panel-name">FibreX Monitor</span>
+        <div class="head-end">
+          <span class="live-dot" aria-hidden="true"></span>
+          <button class="icon-btn" type="button" title="Pause monitoring" aria-label="Pause monitoring" id="pause-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <path d="M10 4H6v16h4zM18 4h-4v16h4z" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <div>
+        <div class="readout">
+          <div>
+            <p class="readout-label">Latency</p>
+            <p class="readout-figure"><span id="readout"></span></p>
+          </div>
+          <span class="pill" id="readout-pill">Healthy</span>
+        </div>
+        <p class="readout-foot">
+          <span id="readout-time">probed 2s ago</span>
+          <span id="readout-target">1.1.1.1</span>
+        </p>
+      </div>
+
+      <div class="spark" aria-hidden="true">
+        <svg id="spark" viewBox="0 0 340 62" preserveAspectRatio="none"></svg>
+      </div>
+
+      <div class="rows" id="rows"></div>
+
+      <div class="actions">
+        <button class="action action--primary" type="button" id="open-dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="14" rx="2" /><path d="M8 21h8M12 18v3" />
+          </svg>
+          Open dashboard
+        </button>
+        <button class="action action--ghost" type="button" id="panel-pause">Pause</button>
+      </div>
+
+      <p class="panel-foot">
+        <span id="foot-note">every 2s &middot; local only</span>
+        <button type="button" id="swap">first run</button>
+      </p>
+    </div>
+
+    <script>
+      (function () {
+        var ICONS = {
+          packet:
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-8 4 16 3-8h6"/></svg>',
+          download:
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v14M6 13l6 6 6-6"/></svg>',
+          upload:
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V6M6 11l6-6 6 6"/></svg>',
+          router:
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="13" width="18" height="8" rx="2"/><path d="M7 17h.01M11 17h.01"/><path d="M12 9V5"/></svg>',
+          devices:
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="14" height="10" rx="2"/><path d="M6 19h6"/></svg>'
+        };
+
+        /* The popover shows what the plan lists for it: status, latency, probe
+           failures, rates, sparkline, last update, pause/resume, open dashboard.
+           Router-level detail like optical power stays on the Fibre & Router
+           screen; adding it here overflowed a fixed-height popover and clipped
+           the last row. */
+        var WITH_READINGS = [
+          { icon: "packet", label: "Probe failures", value: "3 of 25" },
+          { icon: "download", label: "Download", value: "92.4 Mbps" },
+          { icon: "upload", label: "Upload", value: "18.7 Mbps" },
+          { icon: "router", label: "Router", value: "1.4 ms" },
+          { icon: "devices", label: "Devices online", value: "11 / 14" }
+        ];
+
+        var FIRST_RUN = [
+          { icon: "packet", label: "Probe failures", value: "No reading" },
+          { icon: "download", label: "Download", value: "No reading" },
+          { icon: "upload", label: "Upload", value: "No reading" },
+          { icon: "router", label: "Router", value: "No reading" },
+          { icon: "devices", label: "Devices online", value: "No reading" }
+        ];
+
+        var readout = document.getElementById("readout");
+        var readoutPill = document.getElementById("readout-pill");
+        var readoutTime = document.getElementById("readout-time");
+        var readoutTarget = document.getElementById("readout-target");
+        var rows = document.getElementById("rows");
+        var footNote = document.getElementById("foot-note");
+        var spark = document.getElementById("spark");
+        var swapButton = document.getElementById("swap");
+
+        function render(withData) {
+          readout.innerHTML = withData
+            ? '14<span class="readout-unit"> ms</span>'
+            : '<span class="readout-empty">No reading</span>';
+
+          readoutPill.className = "pill " + (withData ? "pill--good" : "pill--idle");
+          readoutPill.textContent = withData ? "Healthy" : "No reading";
+
+          readoutTime.textContent = withData ? "probed 2s ago" : "never probed";
+          // The target is compiled-in configuration, not a reading, so it stays
+          // visible whether or not any probe has returned yet.
+          readoutTarget.textContent = "1.1.1.1";
+
+          footNote.textContent = withData ? "every 2s · local only" : "monitoring not started";
+
+          rows.innerHTML = (withData ? WITH_READINGS : FIRST_RUN)
+            .map(function (row) {
+              var empty = row.value === "No reading" ? " row-value--empty" : "";
+              return (
+                '<div class="row">' + ICONS[row.icon] +
+                '<span class="row-label">' + row.label + "</span>" +
+                '<span class="row-value' + empty + '">' + row.value + "</span></div>"
+              );
+            })
+            .join("");
+
+          drawSpark(withData);
+        }
+
+        /* Sample sparkline. Deterministic so the mockup looks identical on every
+           open, with one real gap left as a gap rather than bridged. */
+        function drawSpark(withData) {
+          if (!withData) {
+            spark.innerHTML = "";
+            return;
+          }
+
+          var state = 7;
+          var value = 16;
+          var values = [];
+
+          for (var i = 0; i < 60; i++) {
+            state = (state * 1664525 + 1013904223) % 4294967296;
+            value += (state / 4294967296 - 0.5) * 9 + 0.08;
+            values.push(Math.max(3, Math.round(value * 10) / 10));
+          }
+
+          values[38] = null;
+          values[39] = null;
+
+          var present = values.filter(function (v) { return v !== null; });
+          var min = Math.min.apply(null, present);
+          var max = Math.max.apply(null, present);
+          var W = 340;
+          var H = 62;
+          var step = W / (values.length - 1);
+
+          function x(i) { return i * step; }
+          function y(v) { return H - 6 - ((v - min) / (max - min)) * (H - 14); }
+
+          var runs = [];
+          var run = [];
+
+          values.forEach(function (v, i) {
+            if (v === null) {
+              if (run.length) runs.push(run);
+              run = [];
+            } else {
+              run.push([x(i), y(v)]);
+            }
+          });
+          if (run.length) runs.push(run);
+
+          function path(points) {
+            var d = "M" + points[0][0].toFixed(1) + "," + points[0][1].toFixed(1);
+            for (var k = 0; k < points.length - 1; k++) {
+              var a = points[k];
+              var b = points[k + 1];
+              var mid = ((a[0] + b[0]) / 2).toFixed(1);
+              d += " C" + mid + "," + a[1].toFixed(1) + " " + mid + "," + b[1].toFixed(1) +
+                " " + b[0].toFixed(1) + "," + b[1].toFixed(1);
+            }
+            return d;
+          }
+
+          var parts = [
+            '<defs><linearGradient id="panel-wash" x1="0" y1="0" x2="0" y2="1">' +
+              '<stop offset="0%" stop-color="var(--chart-area-top)"/>' +
+              '<stop offset="100%" stop-color="var(--chart-area-bottom)"/></linearGradient></defs>',
+            '<line class="grid-line" x1="0" y1="30" x2="340" y2="30"/>'
+          ];
+
+          runs.forEach(function (points) {
+            if (points.length < 2) return;
+            var line = path(points);
+            parts.push('<path class="spark-area" d="' + line +
+              ' L' + points[points.length - 1][0].toFixed(1) + ",62" +
+              ' L' + points[0][0].toFixed(1) + ",62 Z\"/>");
+          });
+
+          runs.forEach(function (points) {
+            if (points.length < 2) return;
+            parts.push('<path class="spark-line" d="' + path(points) + '"/>');
+          });
+
+          for (var r = 0; r < runs.length - 1; r++) {
+            var end = runs[r][runs[r].length - 1];
+            var next = runs[r + 1][0];
+            parts.push('<line class="spark-gap" x1="' + end[0].toFixed(1) + '" y1="' + end[1].toFixed(1) +
+              '" x2="' + next[0].toFixed(1) + '" y2="' + next[1].toFixed(1) + '"/>');
+          }
+
+          spark.innerHTML = parts.join("");
+        }
+
+        var live = true;
+
+        function togglePause() {
+          live = !live;
+          document.getElementById("panel-pause").textContent = live ? "Pause" : "Resume";
+        }
+
+        document.getElementById("panel-pause").addEventListener("click", togglePause);
+        document.getElementById("pause-btn").addEventListener("click", togglePause);
+
+        // Two independent switches on purpose: pausing monitoring and "no data
+        // yet" are different states, and conflating them is how a paused app ends
+        // up looking like an outage.
+        var showingData = true;
+
+        swapButton.addEventListener("click", function () {
+          showingData = !showingData;
+          swapButton.textContent = showingData ? "first run" : "with readings";
+          render(showingData);
+        });
+
+        // Kept for the same reason as the previous prototype: the dashboard can
+        // drive this panel when it frames it for comparison.
+        window.setPanelView = render;
+        window.addEventListener("message", function (event) {
+          if (event.data && event.data.view) render(event.data.view === "data");
+        });
+
+        if (window.parent !== window) {
+          window.parent.postMessage({ ready: true }, "*");
+        }
+
+        // ?state=empty gives a reviewable first-run panel without clicking.
+        if (new URLSearchParams(window.location.search).get("state") === "empty") {
+          showingData = false;
+          swapButton.textContent = "with readings";
+        }
+
+        render(showingData);
+      })();
+    </script>
+  </body>
+</html>

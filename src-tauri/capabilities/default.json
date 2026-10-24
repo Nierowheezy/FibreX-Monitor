@@ -1,0 +1,14 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the dashboard and the menu-bar panel",
+  "windows": ["main", "panel"],
+  "permissions": [
+    "core:default",
+    "opener:default",
+    "core:window:allow-hide",
+    "core:window:allow-set-fullscreen",
+    "core:window:allow-toggle-maximize",
+    "core:window:allow-is-maximized"
+  ]
+}
