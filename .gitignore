@@ -39,6 +39,10 @@ buildflow/.state/
 # only the poster and the release asset are published.
 brag-output/
 
+# The video skill's bundled music and SFX are licensed CC BY 4.0, not MIT, so
+# they are installed locally from skills-lock.json rather than committed.
+.agents/skills/brag/
+
 # Editor and OS
 .DS_Store
 .idea/
