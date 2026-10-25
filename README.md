@@ -34,6 +34,9 @@ starts a better support conversation.
 
 Music: Sascha Ende, [ende.app](https://ende.app/en) (CC BY 4.0).
 
+The longer story — what it measures, the rules it refuses to break, and how the
+video was made — is in [WRITEUP.md](WRITEUP.md).
+
 ---
 
 ## Download and install
