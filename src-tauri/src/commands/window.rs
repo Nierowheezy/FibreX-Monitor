@@ -25,6 +25,10 @@ pub fn show_dashboard<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
         .get_webview_window(MAIN_LABEL)
         .ok_or_else(|| "the dashboard window is missing".to_string())?;
 
+    // The panel floats above ordinary windows, so it would sit on top of the
+    // dashboard that is about to open.
+    crate::tray::hide_panel(app);
+
     let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
 
     window.show().map_err(|error| error.to_string())?;

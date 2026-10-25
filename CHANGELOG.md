@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.1.1
+
+- The menu-bar panel now appears over whichever app and desktop Space is in front. A window that this app created at launch, while it was still a regular app, ignored macOS's "join all Spaces" behaviour for the rest of its life and stayed on the Space it was born on, so clicking the menu-bar icon while another app was frontmost looked like nothing happened. The panel is now created only after the app has become a menu-bar app, which is when macOS honours that behaviour, and it lands on the active Space from the first click.
+- The panel is dismissed by a click in any other app. It used to hide when it lost keyboard focus, but an accessory app can be given activation and then have it taken back without any input from anyone; that rule read the hand-back as a click elsewhere and took the panel away about two seconds after opening it.
+- The panel is placed against the display the menu-bar icon is actually on, rather than the display it last appeared on, so its position stays correct with more than one screen.
+- The menu-bar icon is the app's own mark — the three ember chevrons — instead of a placeholder signal-bars icon. It is drawn as a macOS template image, so it follows the menu bar's light and dark appearance.
+
 ## v0.1.0
 
 The first release on GitHub. The project was carried through several internal

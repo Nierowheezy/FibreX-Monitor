@@ -15,9 +15,50 @@ topbar cannot drift apart.
 - `64x64.png`, `Square*Logo.png`, `StoreLogo.png` - extra sizes the Tauri icon
   generator emits. They are committed so a rebuild is reproducible.
 
-The menu-bar glyph is separate: `src-tauri/assets/tray-icon.png`. It is a macOS
-template image (black with alpha) so macOS can invert it for a light or dark menu
-bar, and it is deliberately not the coloured app mark.
+The menu-bar glyph is separate: `src-tauri/assets/tray-icon.png`. It is the same
+mark as the app icon, reduced to a macOS template image (black with alpha) so
+macOS can tint it for a light or dark menu bar. It is derived from `icon.png`
+rather than hand-drawn, so the menu bar cannot drift from the app icon either.
+
+## The menu-bar glyph
+
+`tray-icon.png` is a 64x64 template: black pixels, with the alpha channel carrying
+the mark. Two things matter for a template image: the colour must be black (macOS
+ignores it and tints by alpha), and the artwork must sit inside the visible area
+with a little padding rather than touching the edges.
+
+It is produced from the master icon with Pillow, which the regeneration machine
+has. The mark occupies the 552x552 group starting at (236, 236) in the 1024
+master; the red channel is the cleanest coverage signal because the mark is
+`#ff5a1c` (255 red) on a `#09090b` tile (9 red):
+
+```py
+from PIL import Image
+
+source = Image.open("src-tauri/icons/icon.png").convert("RGB")
+mark = source.crop((236, 236, 788, 788))
+
+alpha = Image.new("L", mark.size)
+for y in range(mark.height):
+    for x in range(mark.width):
+        coverage = (mark.getpixel((x, y))[0] - 9) / (255 - 9)
+        alpha.putpixel((x, y), max(0, min(255, round(coverage * 255))))
+
+art = alpha.crop(alpha.point(lambda value: 255 if value > 4 else 0).getbbox())
+side = max(art.size)
+padding = round(side * 0.04)
+canvas = Image.new("L", (side + padding * 2, side + padding * 2), 0)
+canvas.paste(art, ((side - art.width) // 2 + padding, (side - art.height) // 2 + padding))
+canvas = canvas.resize((64, 64), Image.LANCZOS)
+
+black = Image.new("L", canvas.size, 0)
+Image.merge("RGBA", (black, black, black, canvas)).save("src-tauri/assets/tray-icon.png")
+```
+
+The 30% and 55% opacity of the fan's outer chevrons survives as partial alpha, so
+the menu-bar mark keeps the same weighting as the app icon. At 64x64 the image is
+downsampled by macOS to the menu bar's 18 pt height, which keeps the edges clean
+on a Retina display.
 
 ## Regenerating
 

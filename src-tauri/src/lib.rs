@@ -47,22 +47,14 @@ pub fn run() {
             // Dock icon and an application menu, which makes the app look and
             // behave like the windowed app it is replacing.
             //
-            // The policy follows the window. A regular app can own a fullscreen
-            // space, and in that space the menu bar and the Dock are hidden
-            // until the pointer reaches the top of the screen, which is what
-            // makes a true fullscreen possible at all. So the app is a regular
-            // app whenever its dashboard is on screen and a menu-bar app when
-            // it is not.
-            let dashboard_visible = app
-                .get_webview_window("main")
-                .and_then(|window| window.is_visible().ok())
-                .unwrap_or(false);
-
-            app.set_activation_policy(if dashboard_visible {
-                tauri::ActivationPolicy::Regular
-            } else {
-                tauri::ActivationPolicy::Accessory
-            });
+            // The policy is set before the tray is installed because the panel
+            // is created there, and macOS only gives a window working Space
+            // behaviour when the app is already a menu-bar app at that moment.
+            // `tray::create_panel` explains what goes wrong otherwise. The
+            // dashboard is hidden on launch (see `tauri.conf.json`) so nothing
+            // is on screen while this happens, and it switches the app back to
+            // a regular app once the panel exists.
+            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
             tray::install(app.handle())?;
 
@@ -176,6 +168,14 @@ pub fn run() {
                         eprintln!("the green button keeps its default behaviour: {error}");
                     }
                 });
+            }
+
+            // The dashboard opens on launch, as it did when its window was
+            // declared visible. It opens last: the panel has to be created
+            // while the app is accessory, and showing the dashboard switches
+            // the app back to a regular app for as long as it is on screen.
+            if let Err(error) = commands::window::show_dashboard(app.handle()) {
+                eprintln!("the dashboard did not open at launch: {error}");
             }
 
             Ok(())

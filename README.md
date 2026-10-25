@@ -180,4 +180,5 @@ MIT — see [LICENSE](LICENSE).
 
 ## Changelog
 
+- **v0.1.1** — the menu-bar panel now opens over whatever app and desktop Space is in front, dismisses when you click in another app, and wears the app's own ember mark in the menu bar instead of a placeholder signal icon.
 - **v0.1.0** — the first release on GitHub. FibreX monitoring with an incident timeline, an honest speed test, read-only Huawei OptiXstar router statistics, and the router connection configured in-app under Settings with the password in the Keychain. Full history in [CHANGELOG.md](CHANGELOG.md).

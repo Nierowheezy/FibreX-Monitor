@@ -1,6 +1,6 @@
 [package]
 name = "fibrex-monitor"
-version = "0.1.0"
+version = "0.1.1"
 description = "Local-first macOS menu-bar monitor for MTN FibreX connections"
 authors = ["you"]
 edition = "2024"
@@ -44,10 +44,16 @@ ureq = { version = "3.4.2", default-features = false, features = ["rustls"] }
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = "0.6"
 objc2-app-kit = { version = "0.3", default-features = false, features = [
+  "NSApplication",
   "NSWindow",
   "NSButton",
   "NSControl",
+  "NSEvent",
+  "block2",
 ] }
+# The panel's click-away monitor is an Objective-C block, which is how AppKit
+# takes the handler. Already in the tree through objc2-app-kit.
+block2 = "0.6"
 
 # The macOS Keychain, for the router password the settings card stores. Scoped
 # to macOS because that is the platform this app is for; on other targets the
