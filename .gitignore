@@ -35,6 +35,10 @@ playwright-report/
 # BuildFlow generated local state (dashboard activity record)
 buildflow/.state/
 
+# Launch video working files: sources, captures, renders and audio stay local;
+# only the poster and the release asset are published.
+brag-output/
+
 # Editor and OS
 .DS_Store
 .idea/

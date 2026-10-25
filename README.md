@@ -20,6 +20,22 @@ no account, and no changes to your router.
 
 ---
 
+## Watch it
+
+[![FibreX Monitor launch video](screenshots/video-poster.png)](https://github.com/Nierowheezy/FibreX-Monitor/releases/download/v0.1.1/fibrex-monitor-launch.mp4)
+
+100 seconds, every screen, and an honest answer to the question the app keeps
+inviting: is this useful, or just fun for people who ping for sport? Both. The
+useful half is the record — when the line drops for four minutes and comes back
+before you can look, the app still has the failed probes, the start time, the
+recovery time, and whether the router answered. That is the difference between
+"it keeps dropping" and "4m 12s, router stayed up", and it is the sentence that
+starts a better support conversation.
+
+Music: Sascha Ende, [ende.app](https://ende.app/en) (CC BY 4.0).
+
+---
+
 ## Download and install
 
 Grab the latest `.zip` from the
@@ -109,7 +125,7 @@ Things the app cannot do, stated up front so expectations are set:
 | What you might expect | Why it isn't there |
 |---|---|
 | A "Devices" page | The onboard firmware answers `"NONE"` for the device-list endpoint — no list can be built from nothing. A screen that cannot be filled was removed rather than left apologising. |
-| Optical TX/RX figures | Same firmware block — that data is not exposed on this model. |
+| Optical transmit figures | The firmware reports receive power only — transmit power, temperature, voltage and bias current are not exposed at all, so no field exists for them. |
 | A WAN traffic number that matches a speed test exactly | They measure different things: the router card reports what **all devices are transferring** on the WAN at that moment, while the speed test is **one synthetic burst** from one device. Both are shown in Mbps, and both are correct for their own question. |
 | Automatic update | The app is built and released by hand; check the Releases page. |
 | Notarised install | Would need an Apple Developer signing identity. |
