@@ -4,7 +4,7 @@
 
 **Type:** Fix
 
-**Status:** implemented, awaiting review
+**Status:** shipped in v0.1.2
 
 ## What this is
 

@@ -4,4 +4,4 @@ Completed fix specs are archived here by `/complete`, one file per fix. These ar
 ad-hoc bug fixes and small changes that weren't planned build-plan features.
 Together with `buildflow/history/features/`, they're the project's build history.
 
-_Empty until you complete your first fix._
+- `01-unobserved-incidents.md` — an outage the app did not watch is no longer reported as one it measured (v0.1.2).
