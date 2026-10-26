@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v0.1.2
+
+- **An outage that was not watched is no longer reported as an outage that was measured.** An incident was opened by two failed probes and closed by the next success, with nothing in between checked. If probing stopped — monitoring paused, the app quit, the Mac slept — the first success afterwards closed the incident and the whole silent stretch was stored as confirmed downtime. Probing that stops now closes the incident at the last probe it actually saw, and so does any gap wider than ten seconds between probes; the gap starts a fresh observation instead of extending the old one. A gap followed by another failure begins a new incident rather than drawing a line across time the app did not see.
+- Incidents carry two new fields, `observed_until` and `closed_by`, so the record says how far it was watched and why it closed. Existing history migrates in place and keeps every row; incidents recorded before this version were all closed by a successful probe.
+- An incident closed because observation stopped is labelled **Unobserved** in the app, its duration reads "at least" the watched part, and its end time reads "monitoring stopped" rather than "recovered". The incidents screen explains the count in one line.
+
 ## v0.1.1
 
 - The menu-bar panel now appears over whichever app and desktop Space is in front. A window that this app created at launch, while it was still a regular app, ignored macOS's "join all Spaces" behaviour for the rest of its life and stayed on the Space it was born on, so clicking the menu-bar icon while another app was frontmost looked like nothing happened. The panel is now created only after the app has become a menu-bar app, which is when macOS honours that behaviour, and it lands on the active Space from the first click.

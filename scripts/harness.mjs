@@ -119,12 +119,16 @@ const ROUTER_REPORT = {
 
 const INCIDENTS = [
   {
+    // The newest is closed by a pause rather than by a success, so the harness
+    // shows the "at least" wording and the unobserved badge on the overview as
+    // well as a measured one further down.
     id: 3,
     targetId: 1,
     startedAt: now - 3600000,
     recoveredAt: now - 3600000 + 252000,
     probeCount: 9,
     routerReachable: true,
+    closedBy: "unobserved",
   },
   {
     id: 2,
@@ -133,6 +137,7 @@ const INCIDENTS = [
     recoveredAt: now - 86400000 + 48000,
     probeCount: 4,
     routerReachable: false,
+    closedBy: "probe",
   },
 ];
 

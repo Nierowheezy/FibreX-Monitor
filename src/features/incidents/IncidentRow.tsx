@@ -4,6 +4,7 @@ import {
   describeIncident,
   describeRouter,
   isOpen,
+  wasUnobserved,
 } from "./format";
 import { formatClock } from "../overview/format";
 
@@ -22,6 +23,7 @@ export default function IncidentRow({
   now: number;
 }) {
   const open = isOpen(incident);
+  const unobserved = wasUnobserved(incident);
 
   return (
     <li className="hairline-b flex flex-col gap-gap py-row last:border-b-0">
@@ -35,6 +37,8 @@ export default function IncidentRow({
         <span className="ml-auto">
           {open ? (
             <StatusBadge tone="error">Ongoing</StatusBadge>
+          ) : unobserved ? (
+            <StatusBadge tone="neutral">Unobserved</StatusBadge>
           ) : (
             <StatusBadge tone="ok">Recovered</StatusBadge>
           )}
@@ -50,7 +54,10 @@ export default function IncidentRow({
         {!open && incident.recoveredAt !== null && (
           <>
             <span aria-hidden="true">·</span>
-            <span>Recovered {formatClock(incident.recoveredAt)}</span>
+            <span>
+              {unobserved ? "Monitoring stopped" : "Recovered"}{" "}
+              {formatClock(incident.recoveredAt)}
+            </span>
           </>
         )}
       </div>

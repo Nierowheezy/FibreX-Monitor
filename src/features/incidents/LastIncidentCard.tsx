@@ -2,7 +2,7 @@ import { Card, CardBody, CardHead } from "../../components/ui/Card";
 import { IncidentsIcon, RouterIcon } from "../../components/ui/icons";
 import { formatClock } from "../overview/format";
 import type { IncidentSummary } from "../../types/history";
-import { describeRouter, durationOf, formatDuration, isOpen } from "./format";
+import { describeRouter, durationOf, formatDuration, isOpen, wasUnobserved } from "./format";
 
 /**
  * The most recent recorded outage, on the overview.
@@ -60,7 +60,13 @@ export default function LastIncidentCard({
   }
 
   const open = isOpen(incident);
+  const unobserved = wasUnobserved(incident);
   const duration = formatDuration(durationOf(incident, now));
+  const badge = open
+    ? { label: "Ongoing", tone: "bg-bad-wash text-bad" }
+    : unobserved
+      ? { label: "Unobserved", tone: "bg-idle-wash text-idle" }
+      : { label: "Recovered", tone: "bg-idle-wash text-idle" };
 
   return (
     <Card span={4}>
@@ -70,11 +76,9 @@ export default function LastIncidentCard({
         sub={formatClock(incident.startedAt)}
         end={
           <span
-            className={`inline-flex w-fit items-center rounded-pill px-3 py-0.5 text-micro font-semibold tracking-label ${
-              open ? "bg-bad-wash text-bad" : "bg-idle-wash text-idle"
-            }`}
+            className={`inline-flex w-fit items-center rounded-pill px-3 py-0.5 text-micro font-semibold tracking-label ${badge.tone}`}
           >
-            {open ? "Ongoing" : "Recovered"}
+            {badge.label}
           </span>
         }
       />
@@ -88,7 +92,9 @@ export default function LastIncidentCard({
               {open ? "Failing now" : "Probes did not connect"}
             </p>
             <p className="mt-0.5 text-small text-ink-faint">
-              {duration} &middot; confirmed by probes
+              {unobserved
+                ? `at least ${duration} &middot; monitoring stopped`
+                : `${duration} &middot; confirmed by probes`}
             </p>
             <p className="mt-0.5 text-small text-ink-faint">
               {describeRouter(incident)}
@@ -99,7 +105,11 @@ export default function LastIncidentCard({
         <div className="mt-gap flex items-center justify-between gap-row font-mono text-micro text-ink-faint">
           <span>Started {formatClock(incident.startedAt)}</span>
           <span>
-            {open ? "Not recovered" : `Recovered ${formatClock(incident.recoveredAt)}`}
+            {open
+              ? "Not recovered"
+              : unobserved
+                ? `Monitoring stopped ${formatClock(incident.recoveredAt)}`
+                : `Recovered ${formatClock(incident.recoveredAt)}`}
           </span>
         </div>
 

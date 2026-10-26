@@ -8,6 +8,7 @@ import {
   formatDuration,
   isOpen,
   summariseIncidents,
+  wasUnobserved,
 } from "./format";
 
 /**
@@ -27,9 +28,18 @@ function incident(overrides: Partial<IncidentSummary> = {}): IncidentSummary {
     recoveredAt: NOW - 5_000,
     probeCount: 3,
     routerReachable: null,
+    closedBy: "probe",
     ...overrides,
   };
 }
+
+describe("wasUnobserved", () => {
+  it("is true only when probing stopped before recovery was seen", () => {
+    expect(wasUnobserved(incident({ closedBy: "unobserved" }))).toBe(true);
+    expect(wasUnobserved(incident({ closedBy: "probe" }))).toBe(false);
+    expect(wasUnobserved(incident({ closedBy: null, recoveredAt: null }))).toBe(false);
+  });
+});
 
 describe("formatDuration", () => {
   it("keeps a decimal below ten seconds", () => {
@@ -122,6 +132,25 @@ describe("describeIncident", () => {
     expect(describeIncident(open, NOW)).toBe("Failing for 4.0s and counting");
   });
 
+  it("marks a duration as a floor when probing stopped first", () => {
+    const unobserved = incident({
+      startedAt: NOW - 600_000,
+      recoveredAt: NOW - 597_000,
+      closedBy: "unobserved",
+    });
+
+    expect(describeIncident(unobserved, NOW)).toBe(
+      "Lasted at least 3.0s · monitoring stopped",
+    );
+  });
+
+  it("does not call an unobserved outage a confirmed one", () => {
+    const unobserved = incident({ closedBy: "unobserved" });
+
+    expect(describeIncident(unobserved, NOW)).not.toContain("Lasted 5.0s");
+    expect(describeIncident(unobserved, NOW)).toContain("at least");
+  });
+
   it("never names a cause", () => {
     const text = describeIncident(incident(), NOW).toLowerCase();
 
@@ -168,5 +197,23 @@ describe("summariseIncidents", () => {
     expect(summary?.open).toBe(1);
     expect(summary?.count).toBe(2);
     expect(summary?.longestMs).toBe(6_000);
+  });
+
+  it("counts an unobserved close separately from an ongoing one", () => {
+    const summary = summariseIncidents(
+      [
+        incident({
+          id: 1,
+          startedAt: NOW - 10_000,
+          recoveredAt: NOW - 8_000,
+          closedBy: "unobserved",
+        }),
+        incident({ id: 2, startedAt: NOW - 6_000, recoveredAt: null, closedBy: null }),
+      ],
+      NOW,
+    );
+
+    expect(summary?.unobserved).toBe(1);
+    expect(summary?.open).toBe(1);
   });
 });

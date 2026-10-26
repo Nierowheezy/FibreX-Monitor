@@ -6,6 +6,7 @@ use crate::models::latency::LatencyPoint;
 use crate::models::overview::{ConnectionOverview, MetricValue, RouterReachability, ValueState};
 use crate::monitoring::health;
 use crate::monitoring::state::{FreshLatency, MonitorState, SERIES_WINDOW_MS};
+use crate::HistoryStore;
 
 /// Builds the overview payload from whatever monitoring has actually seen.
 ///
@@ -134,9 +135,29 @@ pub fn get_latency_series(state: State<'_, Arc<MonitorState>>) -> Vec<LatencyPoi
 /// can tell whether it actually did. The loop keeps running either way, which
 /// is what makes a resume immediate and keeps the readings taken before the
 /// pause in the history.
+///
+/// Pausing also closes any outage that is still open, at the last probe it
+/// actually saw. Otherwise the pause would sit inside the incident and be
+/// reported as downtime the app never measured.
 #[tauri::command]
-pub fn set_monitoring_paused(paused: bool, state: State<'_, Arc<MonitorState>>) -> bool {
+pub fn set_monitoring_paused(
+    paused: bool,
+    state: State<'_, Arc<MonitorState>>,
+    history: State<'_, HistoryStore>,
+) -> bool {
     state.set_paused(paused);
+
+    if paused
+        && let Some(store) = history.get()
+    {
+        // A failed close is not fatal: the gap check in `Store::record`
+        // closes the same incident on the next probe after a resume, so the
+        // record still cannot claim the pause as downtime.
+        if let Err(error) = store.close_open_incidents() {
+            eprintln!("could not close incidents for the pause: {error}");
+        }
+    }
+
     state.is_paused()
 }
 

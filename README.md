@@ -69,8 +69,10 @@ Grab the latest `.zip` from the
    minute the router sections start filling in: WAN traffic, link state,
    uptime, firmware details.
 3. **Leave it running.** Each outage is written to the incident timeline with
-   its exact start, end, and duration — evidence you can show an ISP support
-   conversation instead of describing it from memory.
+   its start, end, and duration — evidence you can show an ISP support
+   conversation instead of describing it from memory. If monitoring stops
+   before the line comes back, the outage ends where the evidence ends and is
+   marked **Unobserved**, so an unwatched gap is never counted as downtime.
 
 ## Using each screen
 
@@ -79,7 +81,7 @@ Grab the latest `.zip` from the
 | **Overview** | Live connection health at a glance: current state, recent incidents, today's traffic, the router snapshot. |
 | **Fibre and Router** | The fibre line and the router on it: link status, uptime, WAN traffic, firmware details pulled live from the OptiXstar router. |
 | **Speed test** | Runs a real measurement in three named phases — **Ping**, **Download**, **Upload** — each phase labelled on the gauge while it measures, against `speed.cloudflare.com`. |
-| **Incidents** | The exact record: when the line went down, when it recovered, how long it took. Newest first, in a fixed-height scroll list. |
+| **Incidents** | The exact record: when the line went down, when it recovered, how long it took. Newest first, in a fixed-height scroll list. An outage that ended because monitoring stopped is labelled unobserved, and its duration is the part that was watched. |
 | **Settings** | Pause the monitoring, choose light/dark appearance, and edit the router connection. |
 
 ### Settings → Router connection, in detail

@@ -74,11 +74,13 @@ The shipped implementation is narrower than the original plan. What exists today
 - `id` (integer) - primary key
 - `target_id` (integer)
 - `started_at` (integer, UTC ms), indexed
-- `recovered_at` (integer, nullable) - NULL while the outage is open
+- `recovered_at` (integer, nullable) - when the incident stopped being open: the successful probe, or the last observed probe when observation stopped. NULL while the outage is open
+- `observed_until` (integer) - the last probe folded into the incident, which is how far the evidence reaches
+- `closed_by` (text, nullable) - `probe` when a success closed it, `unobserved` when probing stopped first, NULL while open
 - `probe_count` (integer) - failed probes recorded
 - `router_reachable` (integer, nullable) - captured when the outage began; NULL when no router reading covers it
 
-An incident is opened by two consecutive failed probes (`INCIDENT_THRESHOLD`) and closed by the next success. A single failure that recovers is deleted rather than reported. There is deliberately no cause, severity, or classification column: a failed TCP connect is not evidence of a cause.
+An incident is opened by two consecutive failed probes (`INCIDENT_THRESHOLD`) and closed by the next success. Probing that stops — a pause, a quit, a sleep — closes it at the last probe actually seen and marks it `unobserved`, as does any silence wider than `UNOBSERVED_GAP_MS`; the recovery time of an unobserved incident is therefore a lower bound on the outage, and the interface must say so. A single failure that recovers is deleted rather than reported. There is deliberately no cause, severity, or classification column: a failed TCP connect is not evidence of a cause.
 
 Raw samples are kept for `RETENTION_MS` (14 days) and pruned on write. No aggregation is stored, because an aggregate would be a derived number with no stored evidence behind it.
 
@@ -153,7 +155,7 @@ Screens (five, not seven):
 - **Overview** - the headline latency and its subject, the router's reachability, probe failures over the five-minute window, latency history for this launch, uptime from stored probes, and an honest empty WAN card.
 - **Fibre & Router** - router reachability, the internet target, probe failures, line latency history, and WAN traffic and router session status (session-gated, so they state what is missing).
 - **Devices** - the connected-device list once a router session exists; until then it says so rather than inventing devices.
-- **Incidents** - recorded outages with start, recovery, duration, failed-probe count, and what the router was doing at the time. Three distinct empty states.
+- **Incidents** - recorded outages with start, recovery, duration, failed-probe count, and what the router was doing at the time; an outage closed because probing stopped is marked unobserved and its duration is a lower bound. Three distinct empty states.
 - **Settings** - appearance, privacy, the compiled-in probe target, router address, history retention, and what is not built yet.
 - **Menu-bar popover** (not a screen) - status, latency, probe failures, router reachability, and open-dashboard. No download/upload rows.
 

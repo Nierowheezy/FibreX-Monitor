@@ -17,7 +17,9 @@ pub struct IncidentSummary {
     /// UTC epoch milliseconds of the first failed probe.
     pub started_at: i64,
     /// UTC epoch milliseconds of the first successful probe after the outage,
-    /// or null while it is still running.
+    /// or null while it is still running. When `closedBy` is `"unobserved"`,
+    /// this is the last probe that was seen instead, and the duration is the
+    /// part of the outage the app actually watched.
     pub recovered_at: Option<i64>,
     /// How many failed probes were recorded.
     pub probe_count: u32,
@@ -25,6 +27,12 @@ pub struct IncidentSummary {
     /// router reading covers the window, which is not the same as the router
     /// being down and must never be rendered as if it were.
     pub router_reachable: Option<bool>,
+    /// How the incident closed: `"probe"` when a successful probe was seen,
+    /// `"unobserved"` when probing stopped first (pause, quit, sleep), null
+    /// while it is still open.
+    ///
+    /// This is what stops an unobserved gap reading as confirmed downtime.
+    pub closed_by: Option<String>,
 }
 
 /// What the history database can currently answer.
@@ -82,6 +90,7 @@ mod tests {
             recovered_at: None,
             probe_count: 4,
             router_reachable: Some(true),
+            closed_by: None,
         };
 
         assert_eq!(
@@ -93,6 +102,7 @@ mod tests {
                 "recoveredAt": Value::Null,
                 "probeCount": 4,
                 "routerReachable": true,
+                "closedBy": Value::Null,
             })
         );
     }
@@ -108,6 +118,7 @@ mod tests {
             recovered_at: Some(9_000),
             probe_count: 3,
             router_reachable: None,
+            closed_by: Some("probe".to_string()),
         };
 
         let value = serde_json::to_value(&incident).expect("serialise");
@@ -116,6 +127,27 @@ mod tests {
             value.get("routerReachable"),
             Some(&Value::Bool(false)),
             "no reading is not a reading of false"
+        );
+    }
+
+    #[test]
+    fn an_unobserved_close_names_itself_on_the_wire() {
+        let incident = IncidentSummary {
+            id: 3,
+            target_id: 1,
+            started_at: 1_000,
+            recovered_at: Some(5_000),
+            probe_count: 2,
+            router_reachable: None,
+            closed_by: Some("unobserved".to_string()),
+        };
+
+        let value = serde_json::to_value(&incident).expect("serialise");
+        assert_eq!(value["closedBy"], json!("unobserved"));
+        assert_ne!(
+            value["closedBy"],
+            json!("probe"),
+            "a closed-by-pause incident must not claim a measured recovery"
         );
     }
 

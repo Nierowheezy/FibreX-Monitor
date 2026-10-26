@@ -258,6 +258,7 @@ pub fn summarise(incident: Incident) -> IncidentSummary {
         recovered_at: incident.recovered_at,
         probe_count: incident.probe_count,
         router_reachable: incident.router_reachable,
+        closed_by: incident.closed_by.map(|closed| closed.label().to_string()),
     }
 }
 
@@ -295,8 +296,10 @@ mod tests {
             target_id: 1,
             started_at: 1_000,
             recovered_at: Some(9_000),
+            observed_until: 9_000,
             probe_count: 4,
             router_reachable: Some(true),
+            closed_by: Some(crate::monitoring::store::ClosedBy::Probe),
         };
 
         let summary = summarise(incident);
@@ -306,6 +309,7 @@ mod tests {
         assert_eq!(summary.recovered_at, Some(9_000));
         assert_eq!(summary.probe_count, 4);
         assert_eq!(summary.router_reachable, Some(true));
+        assert_eq!(summary.closed_by.as_deref(), Some("probe"));
     }
 
     /// A stored failure must come back as a chart point with no value, so the

@@ -18,7 +18,12 @@ export interface IncidentSummary {
   targetId: number;
   /** UTC epoch milliseconds of the first failed probe. */
   startedAt: number;
-  /** UTC epoch milliseconds of the first success after the outage, or null if it is still running. */
+  /**
+   * UTC epoch milliseconds of the first success after the outage, or null if
+   * it is still running. When `closedBy` is `"unobserved"` this is the last
+   * probe that was actually seen, and the duration is the part of the outage
+   * the app watched rather than the whole of it.
+   */
   recoveredAt: number | null;
   /** How many failed probes were recorded. */
   probeCount: number;
@@ -28,6 +33,14 @@ export interface IncidentSummary {
    * down.
    */
   routerReachable: boolean | null;
+  /**
+   * How the incident closed: `"probe"` when a successful probe was seen,
+   * `"unobserved"` when probing stopped first (pause, quit, sleep), null while
+   * it is still open.
+   *
+   * This is what stops an unobserved gap reading as confirmed downtime.
+   */
+  closedBy: "probe" | "unobserved" | null;
 }
 
 /**

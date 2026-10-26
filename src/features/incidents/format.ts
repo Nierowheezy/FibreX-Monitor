@@ -46,6 +46,18 @@ export function isOpen(incident: IncidentSummary): boolean {
 }
 
 /**
+ * Whether probing stopped before the recovery was seen.
+ *
+ * These incidents are closed where the evidence ends, so their duration is the
+ * part of the outage that was watched — a lower bound, not a measurement of the
+ * whole thing. Presenting that as a confirmed recovery would be a lie about
+ * what the app saw.
+ */
+export function wasUnobserved(incident: IncidentSummary): boolean {
+  return incident.closedBy === "unobserved";
+}
+
+/**
  * How long the outage ran, or has run so far.
  *
  * `now` is a parameter rather than read inside, so a component re-rendering
@@ -77,9 +89,11 @@ export function describeRouter(incident: IncidentSummary): string {
  */
 export function describeIncident(incident: IncidentSummary, now: number): string {
   const duration = formatDuration(durationOf(incident, now));
-  return isOpen(incident)
-    ? `Failing for ${duration} and counting`
-    : `Lasted ${duration}`;
+  if (isOpen(incident)) return `Failing for ${duration} and counting`;
+  if (wasUnobserved(incident)) {
+    return `Lasted at least ${duration} · monitoring stopped`;
+  }
+  return `Lasted ${duration}`;
 }
 
 /**
@@ -92,19 +106,21 @@ export function describeIncident(incident: IncidentSummary, now: number): string
 export function summariseIncidents(
   incidents: IncidentSummary[],
   now: number,
-): { count: number; totalMs: number; longestMs: number; open: number } | null {
+): { count: number; totalMs: number; longestMs: number; open: number; unobserved: number } | null {
   if (incidents.length === 0) return null;
 
   let totalMs = 0;
   let longestMs = 0;
   let open = 0;
+  let unobserved = 0;
 
   for (const incident of incidents) {
     const duration = durationOf(incident, now);
     totalMs += duration;
     longestMs = Math.max(longestMs, duration);
     if (isOpen(incident)) open += 1;
+    else if (wasUnobserved(incident)) unobserved += 1;
   }
 
-  return { count: incidents.length, totalMs, longestMs, open };
+  return { count: incidents.length, totalMs, longestMs, open, unobserved };
 }

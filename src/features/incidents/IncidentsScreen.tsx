@@ -112,6 +112,13 @@ export default function IncidentsScreen() {
                   summary.totalMs,
                 )} across all of them.`}
           </p>
+          {summary !== null && summary.unobserved > 0 && (
+            <p className="mt-gap text-small text-ink-faint">
+              {summary.unobserved === 1
+                ? "One ended when monitoring stopped, so its duration is the part that was watched."
+                : `${summary.unobserved} ended when monitoring stopped, so their durations are the parts that were watched.`}
+            </p>
+          )}
           {summary !== null && summary.open > 0 && (
             <p className="mt-gap text-small text-bad">
               {summary.open === 1 ? "One is still running." : `${summary.open} are still running.`}
@@ -169,9 +176,11 @@ export default function IncidentsScreen() {
           <p className="text-small text-ink-muted">
             An incident records when probes started failing, when they recovered,
             how long that lasted, and whether the router stayed reachable through
-            it. It does not name a cause. A failed probe says a connection did not
-            open; it does not say why, and it is not evidence against any
-            provider.
+            it. If probing stops — paused, quit, or the Mac slept — the incident
+            ends at the last probe that was actually seen and is marked
+            unobserved, so an unwatched gap is never counted as downtime. It does
+            not name a cause. A failed probe says a connection did not open; it
+            does not say why, and it is not evidence against any provider.
           </p>
         </CardBody>
       </Card>
